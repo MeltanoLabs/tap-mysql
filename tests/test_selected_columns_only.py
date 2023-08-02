@@ -8,7 +8,7 @@ from tap_mysql.tap import TapMySQL
 
 TABLE_NAME_SELECTED_COLUMNS_ONLY = "test_selected_columns_only"
 SAMPLE_CONFIG = {
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3306/melty",
+    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3307/melty",
 }
 
 

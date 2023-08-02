@@ -18,7 +18,7 @@ jobs:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: melty
         ports:
-          - 3306:3306
+          - 3307:3306
     env:
       PIP_CONSTRAINT: .github/workflows/constraints.txt
     strategy:
