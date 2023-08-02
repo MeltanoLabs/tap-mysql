@@ -1,0 +1,60 @@
+name: Test tap-myqsql
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs: {}
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    services:
+      mysqldb:
+        image: mysql
+        restart: always
+        environment:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: melty
+        ports:
+          - 3306:3306
+    env:
+      PIP_CONSTRAINT: .github/workflows/constraints.txt
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3.5.2
+
+    - name: Set up MySQL container
+      run: |
+        docker compose -f docker-compose.yml up -d
+
+    - uses: isbang/compose-action@v1.4.1
+  
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4.6.0
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Upgrade pip
+      run: |
+        pip install pip
+        pip --version
+    - name: Install Poetry
+      run: |
+        pip install poetry
+        poetry --version
+    - name: Install dependencies
+      run: |
+        poetry install
+    - name: Run pytest
+      run: |
+        poetry run pytest
+    - name: Run lint
+      run: |
+        poetry run tox -e lint

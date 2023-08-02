@@ -1,3 +1,5 @@
+# flake8: noqa
+
 import datetime
 import decimal
 import json
@@ -9,14 +11,15 @@ from faker import Faker
 from singer_sdk.testing import get_tap_test_class, suites
 from singer_sdk.testing.runners import TapTestRunner
 from sqlalchemy import Column, DateTime, Integer, MetaData, Numeric, String, Table
-from sqlalchemy.dialects.mysql import DATE, TIME, DATETIME, JSON
+from sqlalchemy.dialects.mysql import DATE, DATETIME, JSON, TIME
+
+from tap_mysql.tap import TapMySQL
+
 from .test_replication_key import TABLE_NAME, TapTestReplicationKey
 from .test_selected_columns_only import (
     TABLE_NAME_SELECTED_COLUMNS_ONLY,
     TapTestSelectedColumnsOnly,
 )
-
-from tap_mysql.tap import TapMySQL
 
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
@@ -34,7 +37,7 @@ NO_SQLALCHEMY_CONFIG = {
 
 
 def setup_test_table(table_name, sqlalchemy_url):
-    """setup any state specific to the execution of the given module."""
+    """Setup any state specific to the execution of the given module."""
     engine = sqlalchemy.create_engine(sqlalchemy_url)
     fake = Faker()
 
@@ -53,7 +56,8 @@ def setup_test_table(table_name, sqlalchemy_url):
         conn.execute(f"TRUNCATE TABLE {table_name}")
         for _ in range(1000):
             insert = test_replication_key_table.insert().values(
-                updated_at=fake.date_between(date1, date2), name=fake.name()
+                updated_at=fake.date_between(date1, date2),
+                name=fake.name(),
             )
             conn.execute(insert)
 
@@ -65,11 +69,13 @@ def teardown_test_table(table_name, sqlalchemy_url):
 
 
 custom_test_replication_key = suites.TestSuite(
-    kind="tap", tests=[TapTestReplicationKey]
+    kind="tap",
+    tests=[TapTestReplicationKey],
 )
 
 custom_test_selected_columns_only = suites.TestSuite(
-    kind="tap", tests=[TapTestSelectedColumnsOnly]
+    kind="tap",
+    tests=[TapTestSelectedColumnsOnly],
 )
 
 TapMySQLTest = get_tap_test_class(
@@ -170,7 +176,9 @@ def test_temporal_datatypes():
                     metadata["metadata"]["replication-method"] = "FULL_TABLE"
 
     test_runner = MySQLTestRunner(
-        tap_class=TapMySQL, config=SAMPLE_CONFIG, catalog=tap_catalog
+        tap_class=TapMySQL,
+        config=SAMPLE_CONFIG,
+        catalog=tap_catalog,
     )
     test_runner.sync_all()
     for schema_message in test_runner.schema_messages:
@@ -225,7 +233,9 @@ def test_jsonb_json():
                     metadata["metadata"]["replication-method"] = "FULL_TABLE"
 
     test_runner = MySQLTestRunner(
-        tap_class=TapMySQL, config=SAMPLE_CONFIG, catalog=tap_catalog
+        tap_class=TapMySQL,
+        config=SAMPLE_CONFIG,
+        catalog=tap_catalog,
     )
     test_runner.sync_all()
     for schema_message in test_runner.schema_messages:
@@ -233,10 +243,11 @@ def test_jsonb_json():
             "stream" in schema_message
             and schema_message["stream"] == altered_table_name
         ):
-            assert "object" in schema_message["schema"]["properties"]["column_json"]["type"]
-    assert test_runner.records[altered_table_name][0] == {
-        "column_json": {"baz": "foo"}
-    }
+            assert (
+                "object"
+                in schema_message["schema"]["properties"]["column_json"]["type"]
+            )
+    assert test_runner.records[altered_table_name][0] == {"column_json": {"baz": "foo"}}
 
 
 def test_decimal():
@@ -274,7 +285,9 @@ def test_decimal():
                     metadata["metadata"]["replication-method"] = "FULL_TABLE"
 
     test_runner = MySQLTestRunner(
-        tap_class=TapMySQL, config=SAMPLE_CONFIG, catalog=tap_catalog
+        tap_class=TapMySQL,
+        config=SAMPLE_CONFIG,
+        catalog=tap_catalog,
     )
     test_runner.sync_all()
     for schema_message in test_runner.schema_messages:
@@ -287,9 +300,8 @@ def test_decimal():
 
 class MySQLTestRunner(TapTestRunner):
     def run_sync_dry_run(self) -> bool:
-        """
-        Dislike this function and how TestRunner does this so just hacking it here.
-        Want to be able to run exactly the catalog given
+        """Dislike this function and how TestRunner does this so just hacking it here.
+        Want to be able to run exactly the catalog given.
         """
         new_tap = self.new_tap()
         new_tap.sync_all()

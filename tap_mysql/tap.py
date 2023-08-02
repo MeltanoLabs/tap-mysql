@@ -1,7 +1,6 @@
 """mysql tap class."""
 from __future__ import annotations
 
-import io
 from functools import cached_property
 from typing import Any, Mapping, cast
 
@@ -21,8 +20,8 @@ class TapMySQL(SQLTap):
 
     def __init__(
         self,
-        *args,
-        **kwargs,
+        *args: tuple,
+        **kwargs: dict,
     ) -> None:
         """Constructor.
 
@@ -30,14 +29,14 @@ class TapMySQL(SQLTap):
         See https://github.com/MeltanoLabs/tap-postgres/issues/141
         """
         super().__init__(*args, **kwargs)
-        assert (self.config.get("sqlalchemy_url") is not None) or (
+        assert (self.config.get("sqlalchemy_url") is not None) or (  # noqa: S101
             self.config.get("host") is not None
             and self.config.get("port") is not None
             and self.config.get("user") is not None
             and self.config.get("password") is not None
         ), (
             "Need either the sqlalchemy_url to be set or host, port, user,"
-            + " and password to be set"
+            " and password to be set"
         )
 
     config_jsonschema = th.PropertiesList(
@@ -46,7 +45,7 @@ class TapMySQL(SQLTap):
             th.StringType,
             description=(
                 "Hostname for mysql instance. "
-                + "Note if sqlalchemy_url is set this will be ignored."
+                "Note if sqlalchemy_url is set this will be ignored."
             ),
         ),
         th.Property(
@@ -55,7 +54,7 @@ class TapMySQL(SQLTap):
             default=3306,
             description=(
                 "The port on which mysql is awaiting connection. "
-                + "Note if sqlalchemy_url is set this will be ignored."
+                "Note if sqlalchemy_url is set this will be ignored."
             ),
         ),
         th.Property(
@@ -63,7 +62,7 @@ class TapMySQL(SQLTap):
             th.StringType,
             description=(
                 "User name used to authenticate. "
-                + "Note if sqlalchemy_url is set this will be ignored."
+                "Note if sqlalchemy_url is set this will be ignored."
             ),
         ),
         th.Property(
@@ -79,8 +78,7 @@ class TapMySQL(SQLTap):
             "database",
             th.StringType,
             description=(
-                "Database name. "
-                + "Note if sqlalchemy_url is set this will be ignored."
+                "Database name. Note if sqlalchemy_url is set this will be ignored."
             ),
         ),
         th.Property(
@@ -102,16 +100,15 @@ class TapMySQL(SQLTap):
         if config.get("sqlalchemy_url"):
             return cast(str, config["sqlalchemy_url"])
 
-        else:
-            sqlalchemy_url = URL.create(
-                drivername="mysql+pymysql",
-                username=config["user"],
-                password=config["password"],
-                host=config["host"],
-                port=config["port"],
-                database=config["database"],
-            )
-            return cast(str, sqlalchemy_url)
+        sqlalchemy_url = URL.create(
+            drivername="mysql+pymysql",
+            username=config["user"],
+            password=config["password"],
+            host=config["host"],
+            port=config["port"],
+            database=config["database"],
+        )
+        return cast(str, sqlalchemy_url)
 
     @cached_property
     def connector(self) -> MySQLConnector:

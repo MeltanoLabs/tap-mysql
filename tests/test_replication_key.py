@@ -1,4 +1,6 @@
 """Tests standard tap features using the built-in SDK tests library."""
+# flake8: noqa
+
 import json
 
 import pendulum
@@ -15,7 +17,7 @@ SAMPLE_CONFIG = {
 
 def replication_key_test(tap, table_name):
     """Originally built to address
-    https://github.com/MeltanoLabs/tap-postgres/issues/9
+    https://github.com/MeltanoLabs/tap-postgres/issues/9.
     """
     tap.run_discovery()
     # TODO Switch this to using Catalog from _singerlib as it makes iterating
@@ -36,7 +38,6 @@ def replication_key_test(tap, table_name):
 
     # Handy for debugging
     # with open('data.json', 'w', encoding='utf-8') as f:
-    #    json.dump(tap_catalog, f, indent=4)
 
     tap = TapMySQL(config=SAMPLE_CONFIG, catalog=tap_catalog)
     tap.sync_all()
