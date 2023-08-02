@@ -14,7 +14,6 @@ jobs:
     services:
       mysqldb:
         image: mysql
-        restart: always
         environment:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: melty
