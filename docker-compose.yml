@@ -1,0 +1,12 @@
+---
+# docker compose -f docker-compose.yml up -d
+version: "2.1"
+services:
+  mysqldb:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: melty
+    ports:
+      - 3306:3306 
