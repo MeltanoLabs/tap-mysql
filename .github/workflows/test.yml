@@ -14,7 +14,7 @@ jobs:
     services:
       mysqldb:
         image: mysql
-        environment:
+        env:
           MYSQL_ROOT_PASSWORD: password
           MYSQL_DATABASE: melty
         ports:
