@@ -6,9 +6,11 @@ from singer_sdk.testing.templates import TapTestTemplate
 
 from tap_mysql.tap import TapMySQL
 
-TABLE_NAME_SELECTED_COLUMNS_ONLY = "test_selected_columns_only"
+DB_NAME = "melty"
+
+TABLE_NAME_SELECTED_COLUMNS_ONLY = f"test_selected_columns_only"
 SAMPLE_CONFIG = {
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3307/melty",
+    "sqlalchemy_url": f"mysql+pymysql://root:password@localhost:3307/{DB_NAME}",
 }
 
 

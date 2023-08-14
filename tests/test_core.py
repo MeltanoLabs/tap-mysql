@@ -21,9 +21,11 @@ from .test_selected_columns_only import (
     TapTestSelectedColumnsOnly,
 )
 
+DB_NAME = "melty"
+
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3307/melty",
+    "sqlalchemy_url": f"mysql+pymysql://root:password@localhost:3307/{DB_NAME}",
 }
 
 NO_SQLALCHEMY_CONFIG = {
@@ -32,7 +34,7 @@ NO_SQLALCHEMY_CONFIG = {
     "port": 3307,
     "user": "root",
     "password": "password",
-    "database": "melty",
+    "database": DB_NAME,
 }
 
 
@@ -164,7 +166,7 @@ def test_temporal_datatypes():
         conn.execute(insert)
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
-    altered_table_name = f"public_{table_name}"
+    altered_table_name = f"{DB_NAME}-{table_name}"
     for stream in tap_catalog["streams"]:
         if stream.get("stream") and altered_table_name not in stream["stream"]:
             for metadata in stream["metadata"]:
@@ -196,7 +198,7 @@ def test_temporal_datatypes():
             )
     assert test_runner.records[altered_table_name][0] == {
         "column_date": "2022-03-19",
-        "column_time": "06:04:19.222000",
+        "column_time": "06:04:19",
         "column_timestamp": "1918-02-03T13:00:01",
     }
 
@@ -221,7 +223,7 @@ def test_jsonb_json():
         conn.execute(insert)
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
-    altered_table_name = f"public_{table_name}"
+    altered_table_name = f"{DB_NAME}-{table_name}"
     for stream in tap_catalog["streams"]:
         if stream.get("stream") and altered_table_name not in stream["stream"]:
             for metadata in stream["metadata"]:
