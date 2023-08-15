@@ -25,6 +25,13 @@ plugins:
     - name: database
     - name: sqlalchemy_url
       kind: password
+    - name: ssh_tunnel.private_key
+      kind: password
+    - name: ssh_tunnel.private_key_password
+      kind: password
+    - name: ssh_tunnel.host
+    - name: ssh_tunnel.username
+    - name: ssh_tunnel.port
   loaders:
   - name: target-jsonl
     variant: andyh1203
