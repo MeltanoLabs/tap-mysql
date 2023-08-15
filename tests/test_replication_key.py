@@ -11,7 +11,7 @@ from tap_mysql.tap import TapMySQL
 TABLE_NAME = "test_replication_key"
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3307/melty",
+    "sqlalchemy_url": f"mysql+mysqldb://root:password@localhost:3307/melty",
 }
 
 

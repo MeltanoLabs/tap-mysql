@@ -162,7 +162,7 @@ class TapMySQL(SQLTap):
             return cast(str, config["sqlalchemy_url"])
 
         sqlalchemy_url = URL.create(
-            drivername="mysql+pymysql",
+            drivername="mysql+mysqldb",
             username=config["user"],
             password=config["password"],
             host=config["host"],

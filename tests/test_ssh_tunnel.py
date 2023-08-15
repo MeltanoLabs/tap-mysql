@@ -5,7 +5,7 @@ from tap_mysql.tap import TapMySQL
 
 TABLE_NAME = "test_replication_key"
 SAMPLE_CONFIG = {
-    "sqlalchemy_url": "mysql+pymysql://root:password@10.5.0.5:3306/melty",
+    "sqlalchemy_url": "mysql+mysqldb://root:password@10.5.0.5:3306/melty",
     "ssh_tunnel": {
         "enable": True,
         "host": "127.0.0.1",
