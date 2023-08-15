@@ -11,14 +11,6 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    services:
-      mysqldb:
-        image: mysql
-        env:
-          MYSQL_ROOT_PASSWORD: password
-          MYSQL_DATABASE: melty
-        ports:
-          - 3307:3306
     env:
       PIP_CONSTRAINT: .github/workflows/constraints.txt
     strategy:
@@ -29,7 +21,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3.5.2
 
-    - name: Set up MySQL container
+    - name: Fix Permissions
+      run: |
+        chmod 777 -R ./ssh_tunnel/ssh-server-config
+    
+    - name: Set up MySQL containers (SSH Included)
       run: |
         docker compose -f docker-compose.yml up -d
 
@@ -57,3 +53,6 @@ jobs:
     - name: Run lint
       run: |
         poetry run tox -e lint
+
+
+# To test mysql client 1. docker exec -it 012c /bin/bash (ssh server) 2. apk add mysql mysql-client 3. mysql -h 10.5.0.5 -P 3306 -u root -ppassword 

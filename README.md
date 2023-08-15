@@ -24,6 +24,13 @@ pipx install git+https://github.com/MeltanoLabs/tap-mysql.git@main
 | password            | False    | None    | Password used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | database            | False    | None    | Database name. Note if sqlalchemy_url is set this will be ignored. |
 | sqlalchemy_url      | False    | None    | Example mysql://[username]:[password]@localhost:3306/[db_name] |
+| ssh_tunnel                   | False    | None    | SSH Tunnel Configuration, this is a json object |
+| ssh_tunnel.enable   | True (if ssh_tunnel set) | False   | Enable an ssh tunnel (also known as bastion host), see the other ssh_tunnel.* properties for more details.
+| ssh_tunnel.host | True (if ssh_tunnel set) | False   | Host of the bastion host, this is the host we'll connect to via ssh
+| ssh_tunnel.username | True (if ssh_tunnel set) | False   |Username to connect to bastion host
+| ssh_tunnel.port | True (if ssh_tunnel set) | 22 | Port to connect to bastion host
+| ssh_tunnel.private_key | True (if ssh_tunnel set) | None | Private Key for authentication to the bastion host
+| ssh_tunnel.private_key_password | False | None | Private Key Password, leave None if no password is set
 | stream_maps         | False    | None    | Config object for stream maps capability. For more information check out [Stream Maps](https://sdk.meltano.com/en/latest/stream_maps.html). |
 | stream_map_config   | False    | None    | User-defined config values to be used within map expressions. |
 | flattening_enabled  | False    | None    | 'True' to enable schema flattening and automatically expand nested properties. |
@@ -43,6 +50,10 @@ tap-mysql --about
 This Singer tap will automatically import any environment variables within the working directory's
 `.env` if the `--config=ENV` is provided, such that config values will be considered if a matching
 environment variable is set either in the terminal context or in the `.env` file.
+
+### SSH Tunnels (Bastion Hosts)
+
+This tap supports connecting to a Postgres database via an SSH tunnel (also known as a bastion host). This is useful if you need to connect to a database that is not publicly accessible. This is the same as using `ssh -L` and `ssh -R`, but this is done inside the tap itself.
 
 ## Usage
 
