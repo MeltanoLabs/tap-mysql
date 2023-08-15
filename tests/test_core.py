@@ -23,13 +23,13 @@ from .test_selected_columns_only import (
 
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3307/melty",
+    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3306/melty",
 }
 
 NO_SQLALCHEMY_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
     "host": "localhost",
-    "port": 3307,
+    "port": 3306,
     "user": "root",
     "password": "password",
     "database": "melty",
