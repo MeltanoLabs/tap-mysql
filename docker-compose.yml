@@ -10,7 +10,7 @@ services:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: melty
     ports:
-      - 3306:3306 
+      - 3307:3306 
   mysqldb_ssh:
     image: mysql
     restart: always
