@@ -23,11 +23,15 @@ from .test_selected_columns_only import (
 
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
+    # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
+    # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
     "sqlalchemy_url": "mysql+mysqldb://root:password@127.0.0.1:3306/melty",
 }
 
 NO_SQLALCHEMY_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
+    # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
+    # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
     "host": "127.0.0.1",
     "port": 3306,
     "user": "root",
@@ -149,7 +153,7 @@ def test_temporal_datatypes():
         table_name,
         metadata_obj,
         Column("column_date", DATE),
-        Column("column_time", TIME),
+        Column("column_time", TIME(timezone=False, fsp=6)),
         Column("column_timestamp", DATETIME),
     )
     with engine.connect() as conn:
@@ -158,7 +162,7 @@ def test_temporal_datatypes():
         metadata_obj.create_all(conn)
         insert = table.insert().values(
             column_date="2022-03-19",
-            column_time="06:04:19",
+            column_time="06:04:19.222",
             column_timestamp="1918-02-03 13:00:01",
         )
         conn.execute(insert)
@@ -196,7 +200,7 @@ def test_temporal_datatypes():
             )
     assert test_runner.records[altered_table_name][0] == {
         "column_date": "2022-03-19",
-        "column_time": "06:04:19",
+        "column_time": "06:04:19.222000",
         "column_timestamp": "1918-02-03T13:00:01",
     }
 
