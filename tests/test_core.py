@@ -16,10 +16,6 @@ from sqlalchemy.dialects.mysql import DATE, DATETIME, JSON, TIME
 from tap_mysql.tap import TapMySQL
 
 from .test_replication_key import TABLE_NAME, TapTestReplicationKey
-from .test_selected_columns_only import (
-    TABLE_NAME_SELECTED_COLUMNS_ONLY,
-    TapTestSelectedColumnsOnly,
-)
 
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
@@ -77,10 +73,6 @@ custom_test_replication_key = suites.TestSuite(
     tests=[TapTestReplicationKey],
 )
 
-custom_test_selected_columns_only = suites.TestSuite(
-    kind="tap",
-    tests=[TapTestSelectedColumnsOnly],
-)
 
 TapMySQLTest = get_tap_test_class(
     tap_class=TapMySQL,
@@ -97,15 +89,6 @@ TapMySQLTestNOSQLALCHEMY = get_tap_test_class(
 )
 
 
-# creating testing instance for isolated table in mysql
-TapMySQLTestSelectedColumnsOnly = get_tap_test_class(
-    tap_class=TapMySQL,
-    config=SAMPLE_CONFIG,
-    catalog="tests/resources/data_selected_columns_only.json",
-    custom_suites=[custom_test_selected_columns_only],
-)
-
-
 class TestTapMySQL(TapMySQLTest):
     table_name = TABLE_NAME
     sqlalchemy_url = SAMPLE_CONFIG["sqlalchemy_url"]
@@ -119,17 +102,6 @@ class TestTapMySQL(TapMySQLTest):
 
 class TestTapMySQL_NOSQLALCHMY(TapMySQLTestNOSQLALCHEMY):
     table_name = TABLE_NAME
-    sqlalchemy_url = SAMPLE_CONFIG["sqlalchemy_url"]
-
-    @pytest.fixture(scope="class")
-    def resource(self):
-        setup_test_table(self.table_name, self.sqlalchemy_url)
-        yield
-        teardown_test_table(self.table_name, self.sqlalchemy_url)
-
-
-class TestTapMySQLSelectedColumnsOnly(TapMySQLTestSelectedColumnsOnly):
-    table_name = TABLE_NAME_SELECTED_COLUMNS_ONLY
     sqlalchemy_url = SAMPLE_CONFIG["sqlalchemy_url"]
 
     @pytest.fixture(scope="class")

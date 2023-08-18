@@ -4,6 +4,7 @@ from __future__ import annotations
 import atexit
 import io
 import signal
+import sys
 from functools import cached_property
 from typing import Any, Mapping, cast
 
@@ -28,7 +29,7 @@ class TapMySQL(SQLTap):
         *args: tuple,
         **kwargs: dict,
     ) -> None:
-        """Constructor.
+        """Construct a MySQL tap.
 
         Should use JSON Schema instead
         See https://github.com/MeltanoLabs/tap-postgres/issues/141
@@ -189,15 +190,19 @@ class TapMySQL(SQLTap):
             config=dict(self.config),
             sqlalchemy_url=url.render_as_string(hide_password=False),
         )
-    
+
     def guess_key_type(self, key_data: str) -> paramiko.PKey:
         """Guess the type of the private key.
+
         We are duplicating some logic from the ssh_tunnel package here,
         we could try to use their function instead.
+
         Args:
             key_data: The private key data to guess the type of.
+
         Returns:
             The private key object.
+
         Raises:
             ValueError: If the key type could not be determined.
         """
@@ -209,7 +214,7 @@ class TapMySQL(SQLTap):
         ):
             try:
                 key = key_class.from_private_key(io.StringIO(key_data))  # type: ignore[attr-defined]  # noqa: E501
-            except paramiko.SSHException:
+            except paramiko.SSHException:  # noqa: PERF203
                 continue
             else:
                 return key
@@ -219,10 +224,12 @@ class TapMySQL(SQLTap):
 
     def ssh_tunnel_connect(self, *, ssh_config: dict[str, Any], url: URL) -> URL:
         """Connect to the SSH Tunnel and swap the URL to use the tunnel.
+
         Args:
             ssh_config: The SSH Tunnel configuration
             url: The original URL to connect to.
-                   Returns:
+
+        Returns:
             The new URL to connect to, using the tunnel.
         """
         self.ssh_tunnel: SSHTunnelForwarder = SSHTunnelForwarder(
@@ -251,14 +258,14 @@ class TapMySQL(SQLTap):
         self.logger.info("Shutting down SSH Tunnel")
         self.ssh_tunnel.stop()
 
-    def catch_signal(self, signum, frame) -> None:
+    def catch_signal(self, signum, frame) -> None:  # noqa: ANN001 ARG002
         """Catch signals and exit cleanly.
+
         Args:
             signum: The signal number
             frame: The current stack frame
         """
-        exit(1)  # Calling this to be sure atexit is called, so clean_up gets called
-
+        sys.exit(1)  # Calling this to be sure atexit is called, so clean_up gets called
 
     @property
     def catalog_dict(self) -> dict:

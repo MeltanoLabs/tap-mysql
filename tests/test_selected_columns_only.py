@@ -2,9 +2,13 @@
 # flake8: noqa
 import json
 
+import pytest
+from singer_sdk.testing import get_tap_test_class, suites
 from singer_sdk.testing.templates import TapTestTemplate
 
 from tap_mysql.tap import TapMySQL
+
+from .test_core import setup_test_table, teardown_test_table
 
 TABLE_NAME_SELECTED_COLUMNS_ONLY = "test_selected_columns_only"
 SAMPLE_CONFIG = {
@@ -42,5 +46,27 @@ class TapTestSelectedColumnsOnly(TapTestTemplate):
     name = "selected_columns_only"
     table_name = TABLE_NAME_SELECTED_COLUMNS_ONLY
 
-    def test(self):
-        selected_columns_only_test(self.tap, self.table_name)
+
+custom_test_selected_columns_only = suites.TestSuite(
+    kind="tap",
+    tests=[TapTestSelectedColumnsOnly],
+)
+
+# creating testing instance for isolated table in mysql
+TapMySQLTestSelectedColumnsOnly = get_tap_test_class(
+    tap_class=TapMySQL,
+    config=SAMPLE_CONFIG,
+    catalog="tests/resources/data_selected_columns_only.json",
+    custom_suites=[custom_test_selected_columns_only],
+)
+
+
+class TestTapMySQLSelectedColumnsOnly(TapMySQLTestSelectedColumnsOnly):
+    table_name = TABLE_NAME_SELECTED_COLUMNS_ONLY
+    sqlalchemy_url = SAMPLE_CONFIG["sqlalchemy_url"]
+
+    @pytest.fixture(scope="class")
+    def resource(self):
+        setup_test_table(self.table_name, self.sqlalchemy_url)
+        yield
+        teardown_test_table(self.table_name, self.sqlalchemy_url)
