@@ -22,7 +22,7 @@ def patched_conform(
     elem: Any,  # noqa: ANN401
     property_schema: dict,
 ) -> Any:  # noqa: ANN401
-    """Overrides Singer SDK type conformance to prevent dates turning into datetimes.
+    """Override Singer SDK type conformance to prevent dates turning into datetimes.
 
     Converts a primitive (i.e. not object or array) to a json compatible type.
 

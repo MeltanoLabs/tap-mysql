@@ -12,6 +12,13 @@ Install from GitHub:
 pipx install git+https://github.com/MeltanoLabs/tap-mysql.git@main
 ```
 
+Note that you will also need to install the requisite dependencies for mysqlclient. Example installation command:
+
+```bash
+sudo apt-get update
+sudo apt-get install package-cfg libmysqlclient-dev
+```
+
 ## Configuration
 
 ### Accepted Config Options

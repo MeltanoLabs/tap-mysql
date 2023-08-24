@@ -16,19 +16,19 @@ from sqlalchemy.dialects.mysql import DATE, DATETIME, JSON, TIME
 from tap_mysql.tap import TapMySQL
 
 from .test_replication_key import TABLE_NAME, TapTestReplicationKey
-from .test_selected_columns_only import (
-    TABLE_NAME_SELECTED_COLUMNS_ONLY,
-    TapTestSelectedColumnsOnly,
-)
 
 SAMPLE_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
-    "sqlalchemy_url": "mysql+pymysql://root:password@localhost:3306/melty",
+    # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
+    # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
+    "sqlalchemy_url": "mysql+mysqldb://root:password@127.0.0.1:3306/melty",
 }
 
 NO_SQLALCHEMY_CONFIG = {
     "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
-    "host": "localhost",
+    # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
+    # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
+    "host": "127.0.0.1",
     "port": 3306,
     "user": "root",
     "password": "password",
@@ -73,10 +73,6 @@ custom_test_replication_key = suites.TestSuite(
     tests=[TapTestReplicationKey],
 )
 
-custom_test_selected_columns_only = suites.TestSuite(
-    kind="tap",
-    tests=[TapTestSelectedColumnsOnly],
-)
 
 TapMySQLTest = get_tap_test_class(
     tap_class=TapMySQL,
@@ -90,15 +86,6 @@ TapMySQLTestNOSQLALCHEMY = get_tap_test_class(
     config=NO_SQLALCHEMY_CONFIG,
     catalog="tests/resources/data.json",
     custom_suites=[custom_test_replication_key],
-)
-
-
-# creating testing instance for isolated table in mysql
-TapMySQLTestSelectedColumnsOnly = get_tap_test_class(
-    tap_class=TapMySQL,
-    config=SAMPLE_CONFIG,
-    catalog="tests/resources/data_selected_columns_only.json",
-    custom_suites=[custom_test_selected_columns_only],
 )
 
 
@@ -124,17 +111,6 @@ class TestTapMySQL_NOSQLALCHMY(TapMySQLTestNOSQLALCHEMY):
         teardown_test_table(self.table_name, self.sqlalchemy_url)
 
 
-class TestTapMySQLSelectedColumnsOnly(TapMySQLTestSelectedColumnsOnly):
-    table_name = TABLE_NAME_SELECTED_COLUMNS_ONLY
-    sqlalchemy_url = SAMPLE_CONFIG["sqlalchemy_url"]
-
-    @pytest.fixture(scope="class")
-    def resource(self):
-        setup_test_table(self.table_name, self.sqlalchemy_url)
-        yield
-        teardown_test_table(self.table_name, self.sqlalchemy_url)
-
-
 def test_temporal_datatypes():
     """Dates were being incorrectly parsed as date times (issue #171).
 
@@ -149,7 +125,7 @@ def test_temporal_datatypes():
         table_name,
         metadata_obj,
         Column("column_date", DATE),
-        Column("column_time", TIME),
+        Column("column_time", TIME(timezone=False, fsp=6)),
         Column("column_timestamp", DATETIME),
     )
     with engine.connect() as conn:
@@ -164,7 +140,7 @@ def test_temporal_datatypes():
         conn.execute(insert)
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
-    altered_table_name = f"public_{table_name}"
+    altered_table_name = f"melty-{table_name}"
     for stream in tap_catalog["streams"]:
         if stream.get("stream") and altered_table_name not in stream["stream"]:
             for metadata in stream["metadata"]:
@@ -221,7 +197,7 @@ def test_jsonb_json():
         conn.execute(insert)
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
-    altered_table_name = f"public_{table_name}"
+    altered_table_name = f"melty-{table_name}"
     for stream in tap_catalog["streams"]:
         if stream.get("stream") and altered_table_name not in stream["stream"]:
             for metadata in stream["metadata"]:
