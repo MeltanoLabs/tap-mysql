@@ -156,6 +156,42 @@ class MySQLConnector(SQLConnector):
 
         return sqltype_lookup["string"]  # safe failover to str
 
+    def discover_catalog_entries(self) -> list[dict]:
+        """Return a list of catalog entries from discovery.
+
+        Override to only process schemas specified in config.
+
+        Returns:
+            The discovered catalog entries as a list.
+        """
+        result: list[dict] = []
+        engine = self._engine
+        inspected = sqlalchemy.inspect(engine)
+        for schema_name in self.get_schema_names(engine, inspected):
+            if (
+                "filter_schemas" in self.config
+                and len(self.config["filter_schemas"]) != 0
+                and schema_name not in self.config["filter_schemas"]
+            ):
+                continue
+
+            # Iterate through each table and view
+            for table_name, is_view in self.get_object_names(
+                engine,
+                inspected,
+                schema_name,
+            ):
+                catalog_entry = self.discover_catalog_entry(
+                    engine,
+                    inspected,
+                    schema_name,
+                    table_name,
+                    is_view,
+                )
+                result.append(catalog_entry.to_dict())
+
+        return result
+
 
 class MySQLStream(SQLStream):
     """Stream class for MySQL streams."""
