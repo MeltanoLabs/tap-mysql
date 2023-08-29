@@ -9,11 +9,11 @@ import sqlalchemy
 from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk.helpers._typing import TypeConformanceLevel
-from sqlalchemy.engine import Engine
-from sqlalchemy.engine.reflection import Inspector
 
 if TYPE_CHECKING:
     from sqlalchemy.dialects import mysql
+    from sqlalchemy.engine import Engine
+    from sqlalchemy.engine.reflection import Inspector
 
 unpatched_conform = (
     singer_sdk.helpers._typing._conform_primitive_property  # noqa: SLF001
@@ -157,7 +157,7 @@ class MySQLConnector(SQLConnector):
                 return jsonschema_type
 
         return sqltype_lookup["string"]  # safe failover to str
-    
+
     def get_schema_names(self, engine: Engine, inspected: Inspector) -> list[str]:
         """Return a list of schema names in DB, or overrides with user-provided values.
 
