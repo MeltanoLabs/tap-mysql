@@ -1,5 +1,6 @@
 # flake8: noqa
 
+import copy
 import datetime
 import decimal
 import json
@@ -272,6 +273,29 @@ def test_decimal():
             and schema_message["stream"] == altered_table_name
         ):
             assert "number" in schema_message["schema"]["properties"]["column"]["type"]
+
+
+def test_filter_schemas():
+    """Only return tables from a given schema"""
+    table_name = "test_filter_schemas"
+    engine = sqlalchemy.create_engine(SAMPLE_CONFIG["sqlalchemy_url"])
+
+    metadata_obj = MetaData()
+    table = Table(table_name, metadata_obj, Column("id", Integer), schema="new_schema")
+
+    with engine.connect() as conn:
+        conn.execute("CREATE SCHEMA IF NOT EXISTS new_schema")
+        if table.exists(conn):
+            table.drop(conn)
+        metadata_obj.create_all(conn)
+    filter_schemas_config = copy.deepcopy(SAMPLE_CONFIG)
+    filter_schemas_config.update({"filter_schemas": ["new_schema"]})
+    tap = TapMySQL(config=filter_schemas_config)
+    tap_catalog = json.loads(tap.catalog_json_text)
+    altered_table_name = f"new_schema-{table_name}"
+    # Check that the only stream in the catalog is the one table put into new_schema
+    assert len(tap_catalog["streams"]) == 1
+    assert tap_catalog["streams"][0]["stream"] == altered_table_name
 
 
 class MySQLTestRunner(TapTestRunner):
