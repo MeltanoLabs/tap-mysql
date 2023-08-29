@@ -9,7 +9,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: melty
-      MYSQL_ROOT_HOST: 'localhost'
+      MYSQL_ROOT_HOST: '%'
     ports:
       - 3306:3306 
   mysqldb_ssh:
@@ -19,6 +19,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: melty
+      MYSQL_ROOT_HOST: '%'
     networks:
       inner:
         ipv4_address: 10.5.0.5
