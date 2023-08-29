@@ -9,6 +9,8 @@ import sqlalchemy
 from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk.helpers._typing import TypeConformanceLevel
+from sqlalchemy.engine import Engine
+from sqlalchemy.engine.reflection import Inspector
 
 if TYPE_CHECKING:
     from sqlalchemy.dialects import mysql
@@ -155,42 +157,20 @@ class MySQLConnector(SQLConnector):
                 return jsonschema_type
 
         return sqltype_lookup["string"]  # safe failover to str
+    
+    def get_schema_names(self, engine: Engine, inspected: Inspector) -> list[str]:
+        """Return a list of schema names in DB, or overrides with user-provided values.
 
-    def discover_catalog_entries(self) -> list[dict]:
-        """Return a list of catalog entries from discovery.
-
-        Override to only process schemas specified in config.
+        Args:
+            engine: SQLAlchemy engine
+            inspected: SQLAlchemy inspector instance for engine
 
         Returns:
-            The discovered catalog entries as a list.
+            List of schema names
         """
-        result: list[dict] = []
-        engine = self._engine
-        inspected = sqlalchemy.inspect(engine)
-        for schema_name in self.get_schema_names(engine, inspected):
-            if (
-                "filter_schemas" in self.config
-                and len(self.config["filter_schemas"]) != 0
-                and schema_name not in self.config["filter_schemas"]
-            ):
-                continue
-
-            # Iterate through each table and view
-            for table_name, is_view in self.get_object_names(
-                engine,
-                inspected,
-                schema_name,
-            ):
-                catalog_entry = self.discover_catalog_entry(
-                    engine,
-                    inspected,
-                    schema_name,
-                    table_name,
-                    is_view,
-                )
-                result.append(catalog_entry.to_dict())
-
-        return result
+        if "filter_schemas" in self.config and len(self.config["filter_schemas"]) != 0:
+            return self.config["filter_schemas"]
+        return super().get_schema_names(engine, inspected)
 
 
 class MySQLStream(SQLStream):
