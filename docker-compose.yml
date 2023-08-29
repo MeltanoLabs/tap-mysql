@@ -5,7 +5,7 @@ services:
   mysqldb:
     image: mysql
     restart: always
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: melty
@@ -15,7 +15,7 @@ services:
   mysqldb_ssh:
     image: mysql
     restart: always
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: melty
