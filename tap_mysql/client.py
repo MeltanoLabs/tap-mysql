@@ -221,5 +221,9 @@ class MySQLStream(SQLStream):
             if start_val:
                 query = query.filter(replication_key_col >= start_val)
 
-        for row in self.connector.connection.execute(query):
-            yield dict(row)
+
+        # Despite being a "private" method, _connect() is described as the correct way
+        # to open connections: https://github.com/meltano/sdk/pull/1394
+        with self.connector._connect() as conn:
+            for row in conn.execute(query):
+                yield dict(row)
