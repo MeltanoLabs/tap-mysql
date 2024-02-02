@@ -11,8 +11,6 @@ from singer_sdk import typing as th
 from singer_sdk.helpers._typing import TypeConformanceLevel
 
 if TYPE_CHECKING:
-    from sqlalchemy.dialects import mysql
-    from sqlalchemy.dialects.mysql import types as mysql_types
     from sqlalchemy.engine import Engine
     from sqlalchemy.engine.reflection import Inspector
 

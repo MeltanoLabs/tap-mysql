@@ -24,13 +24,13 @@ jobs:
     - name: Fix Permissions
       run: |
         chmod 777 -R ./ssh_tunnel/ssh-server-config
-    
+
     - name: Set up MySQL containers (SSH Included)
       run: |
         docker compose -f docker-compose.yml up -d
 
     - uses: isbang/compose-action@v1.4.1
-  
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
@@ -58,4 +58,4 @@ jobs:
       run: |
         tox -e typing
 
-# To test mysql client 1. docker exec -it 012c /bin/bash (ssh server) 2. apk add mysql mysql-client 3. mysql -h 10.5.0.5 -P 3306 -u root -ppassword 
+# To test mysql client 1. docker exec -it 012c /bin/bash (ssh server) 2. apk add mysql mysql-client 3. mysql -h 10.5.0.5 -P 3306 -u root -ppassword
