@@ -51,9 +51,9 @@ jobs:
     - name: Install dependencies
       run: |
         poetry install
-    # - name: Run pytest
-    #   run: |
-    #     poetry run pytest
+    - name: Run pytest
+      run: |
+        poetry run pytest
     - name: Run lint
       run: |
         tox -e typing
