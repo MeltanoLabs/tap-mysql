@@ -222,7 +222,7 @@ class TapMySQL(SQLTap):
             paramiko.Ed25519Key,
         ):
             try:
-                key = key_class.from_private_key(io.StringIO(key_data))  # type: ignore[attr-defined]  # noqa: E501
+                key = key_class.from_private_key(io.StringIO(key_data))  # type: ignore[attr-defined]
             except paramiko.SSHException:  # noqa: PERF203
                 continue
             else:
