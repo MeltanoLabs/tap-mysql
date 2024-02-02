@@ -11,7 +11,6 @@ from singer_sdk import typing as th
 from singer_sdk.helpers._typing import TypeConformanceLevel
 
 if TYPE_CHECKING:
-    from sqlalchemy.dialects import mysql
     from sqlalchemy.engine import Engine
     from sqlalchemy.engine.reflection import Inspector
 
@@ -47,12 +46,11 @@ class MySQLConnector(SQLConnector):
         sql_type: str  # noqa: ANN401
         | sqlalchemy.types.TypeEngine
         | type[sqlalchemy.types.TypeEngine]
-        | mysql.ARRAY
         | Any,
     ) -> dict:
         """Return a JSON Schema representation of the provided type.
 
-        Overidden from SQLConnector to correctly handle JSONB and Arrays.
+        Overridden from SQLConnector to correctly handle JSONB and Arrays.
 
         By default will call `typing.to_jsonschema_type()` for strings and SQLAlchemy
         types.

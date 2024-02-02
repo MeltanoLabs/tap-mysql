@@ -11,7 +11,7 @@ services:
       MYSQL_DATABASE: melty
       MYSQL_ROOT_HOST: '%'
     ports:
-      - 3306:3306 
+      - 3306:3306
   mysqldb_ssh:
     image: mysql
     restart: always

@@ -1,12 +1,23 @@
 name: Test tap-myqsql
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches: [main]
+    paths:
+    - tap_mysql/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - .github/workflows/test.yml
+  pull_request:
+    branches: [main]
+    paths:
+    - tap_mysql/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - .github/workflows/test.yml
   workflow_dispatch:
-    inputs: {}
 
 jobs:
   tests:
@@ -15,7 +26,7 @@ jobs:
       PIP_CONSTRAINT: .github/workflows/constraints.txt
     strategy:
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - name: Checkout code
@@ -24,15 +35,15 @@ jobs:
     - name: Fix Permissions
       run: |
         chmod 777 -R ./ssh_tunnel/ssh-server-config
-    
+
     - name: Set up MySQL containers (SSH Included)
       run: |
         docker compose -f docker-compose.yml up -d
 
     - uses: isbang/compose-action@v1.4.1
-  
+
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4.6.0
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -42,8 +53,12 @@ jobs:
         pip --version
     - name: Install Poetry
       run: |
-        pip install poetry
+        pipx install poetry
         poetry --version
+    - name: Install Tox
+      run: |
+        pipx install tox
+        tox --version
     - name: Install dependencies
       run: |
         poetry install
@@ -52,7 +67,6 @@ jobs:
         poetry run pytest
     - name: Run lint
       run: |
-        poetry run tox -e lint
+        tox -e typing
 
-
-# To test mysql client 1. docker exec -it 012c /bin/bash (ssh server) 2. apk add mysql mysql-client 3. mysql -h 10.5.0.5 -P 3306 -u root -ppassword 
+# To test mysql client 1. docker exec -it 012c /bin/bash (ssh server) 2. apk add mysql mysql-client 3. mysql -h 10.5.0.5 -P 3306 -u root -ppassword

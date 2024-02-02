@@ -14,7 +14,7 @@ TABLE_NAME_SELECTED_COLUMNS_ONLY = "test_selected_columns_only"
 SAMPLE_CONFIG = {
     # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
     # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
-    "sqlalchemy_url": f"mysql+mysqldb://root:password@127.0.0.1:3306/melty",
+    "sqlalchemy_url": f"mysql+pymysql://root:password@127.0.0.1:3306/melty",
 }
 
 
