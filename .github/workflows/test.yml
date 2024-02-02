@@ -1,12 +1,23 @@
 name: Test tap-myqsql
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
   push:
     branches: [main]
+    paths:
+    - tap_mysql/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - .github/workflows/test.yml
+  pull_request:
+    branches: [main]
+    paths:
+    - tap_mysql/**
+    - tests/**
+    - poetry.lock
+    - pyproject.toml
+    - .github/workflows/test.yml
   workflow_dispatch:
-    inputs: {}
 
 jobs:
   tests:
