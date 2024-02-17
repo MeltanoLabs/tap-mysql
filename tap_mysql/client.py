@@ -45,7 +45,6 @@ class MySQLConnector(SQLConnector):
     
     def __init__(
         self,
-        is_vitess: bool = False,
         *args,
         **kwargs
     ) -> None:
@@ -55,32 +54,16 @@ class MySQLConnector(SQLConnector):
             is_vitess: Is this a vitess instance?
             sqlalchemy_url: Optional URL for the connection.
         """
-        self.is_vitess = is_vitess
         super().__init__(*args, **kwargs)
-    
-    def create_engine(self) -> Engine:
-        """Creates and returns a new engine. Do not call outside of _engine.
-
-        NOTE: Do not call this method. The only place that this method should
-        be called is inside the self._engine method. If you'd like to access
-        the engine on a connector, use self._engine.
-
-        This method exists solely so that tap/target developers can override it
-        on their subclass of SQLConnector to perform custom engine creation
-        logic.
-
-        Returns:
-            A new SQLAlchemy Engine.
-        """
-        #pymyssql
-        connect_args = {
-            "ssl": {
-                "verify_identity": True,
-                "verify_cert": True,
-                "ca": "/etc/ssl/certs/ca-certificates.crt"
-            }
-        }
-        return sqlalchemy.create_engine(self.sqlalchemy_url, connect_args=connect_args, echo=False)
+        # Check if we are using PlanetScale, if so we need to let our connector know
+        # Ideally we'd just check to see if we're on Vitess, but I don't know how to do that quickly
+        self.is_vitess = False
+        with self._connect() as conn:
+            output = conn.execute("select variable_value from performance_schema.global_variables where variable_name='version_comment' and variable_value like 'PlanetScale%%'")
+            if output.rowcount > 0:
+                self.logger.info("Instance has been detected to be a PlanetScale instance. Using Vitess configuration.")
+                self.is_vitess = True
+            output.close()
 
     @staticmethod
     def to_jsonschema_type(
@@ -233,7 +216,7 @@ class MySQLConnector(SQLConnector):
         Returns:
             `CatalogEntry` object for the given table or a view
         """
-        if self.is_vitess is False and is_view is False:
+        if self.is_vitess is False or is_view is False:
             return super().discover_catalog_entry(engine, inspected, schema_name, table_name, is_view)
         # For vitess views, we can't use DESCRIBE as it's not supported for views so we do the below
         # Initialize unique stream name
@@ -355,8 +338,8 @@ class MySQLConnector(SQLConnector):
         Returns:
             An ordered list of column objects.
         """
-        if self.is_vitess:
-            return self.get_table_columns_vitess(full_table_name, column_names)
+        if self.is_vitess is False:
+            return self.get_table_columns(full_table_name, column_names)
         # If Vitess Instance then we can't use DESCRIBE as it's not supported for views so we do below
         if full_table_name not in self._table_cols_cache:
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
@@ -427,6 +410,6 @@ class MySQLStream(SQLStream):
 
         with self.connector._connect() as conn:
             if self.connector.is_vitess:
-                conn.exec_driver_sql("set workload=olap")
+                conn.exec_driver_sql("set workload=olap") # See https://github.com/planetscale/discussion/discussions/190
             for row in conn.execute(query):
                 yield dict(row)

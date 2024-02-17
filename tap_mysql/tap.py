@@ -88,11 +88,18 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
+            "options",
+            th.ObjectType(additional_properties=th.StringType),
+            description=(
+                "sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL see PlanetScale information below. Note if sqlalchemy_url is set this will be ignored."
+            ),
+        ),
+        th.Property(
             "sqlalchemy_url",
             th.StringType,
             secret=True,
             description=(
-                "Example mysql://[username]:[password]@localhost:3306/[db_name]"
+                "Example pymysql://[username]:[password]@localhost:3306/[db_name][?options] see https://docs.sqlalchemy.org/en/20/dialects/mysql.html#module-sqlalchemy.dialects.mysql.pymysql for more information"
             ),
         ),
         th.Property(
@@ -178,6 +185,7 @@ class TapMySQL(SQLTap):
             host=config["host"],
             port=config["port"],
             database=config["database"],
+            query=config.get("options"),
         )
         return cast(str, sqlalchemy_url)
 
@@ -197,7 +205,7 @@ class TapMySQL(SQLTap):
 
         return MySQLConnector(
             config=dict(self.config),
-            sqlalchemy_url=url.render_as_string(hide_password=False),
+            sqlalchemy_url=url.render_as_string(hide_password=False)
         )
 
     def guess_key_type(self, key_data: str) -> paramiko.PKey:
@@ -301,13 +309,6 @@ class TapMySQL(SQLTap):
         Returns:
             List of discovered Stream objects.
         """
-        with self.connector._connect() as conn:
-            # Check if we are using PlanetScale, if so we need to let our connector know
-            # Ideally we'd just check to see if we're on Vitess, but I don't know how to do that quickly
-            output = conn.execute("select variable_value from performance_schema.global_variables where variable_name='version_comment' and variable_value like 'PlanetScale%'")
-            if len(output.fetchall()) > 0:
-                self.logger.info("Instance has been detected to be a Vitess instance. Using Vitess configuration.")
-                self.connector.is_vitess = True
         return [
             MySQLStream(self, catalog_entry, connector=self.connector)
             for catalog_entry in self.catalog_dict["streams"]

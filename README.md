@@ -30,6 +30,8 @@ sudo apt-get install package-cfg libmysqlclient-dev
 | user                | False    | None    | User name used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | password            | False    | None    | Password used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | database            | False    | None    | Database name. Note if sqlalchemy_url is set this will be ignored. |
+| options             | False    | None    | sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL see PlanetScale information below. Note if sqlalchemy_url is set this will be ignored. |
+| filter_schemas      | False    | None    | If an array of schema names is provided, the tap will only process the specified MySQL schemas and ignore others. If left blank, the tap automatically determines ALL available MySQL schemas. |
 | sqlalchemy_url      | False    | None    | Example mysql://[username]:[password]@localhost:3306/[db_name] |
 | ssh_tunnel                   | False    | None    | SSH Tunnel Configuration, this is a json object |
 | ssh_tunnel.enable   | True (if ssh_tunnel set) | False   | Enable an ssh tunnel (also known as bastion host), see the other ssh_tunnel.* properties for more details.
@@ -66,12 +68,44 @@ This tap supports connecting to a Postgres database via an SSH tunnel (also know
 
 You can easily run `tap-mysql` by itself or in a pipeline using [Meltano](https://meltano.com/).
 
+
 ### Executing the Tap Directly
 
 ```bash
 tap-mysql --version
 tap-mysql --help
 tap-mysql --config CONFIG --discover > ./catalog.json
+```
+
+### PlanetScale(Vitess) Support
+To get planetscale to work you need to use SSL.
+
+config example in meltano.yml
+```yaml
+      host: aws.connect.psdb.cloud
+      user: 01234fdsoi99
+      database: tap-mysql
+      options:
+        ssl_ca: "/etc/ssl/certs/ca-certificates.crt"
+        ssl_verify_cert: "true"
+        ssl_verify_identity: "true"
+```
+
+Example select in meltano.yml (Which excludes tables that will fail)
+```yaml
+    select:
+    - "*.*"
+    - "!information_schema-PROFILING.*"
+    - "!performance_schema-log_status.*"
+```
+
+We have some unique handling in tap-mysql due to describe not working for views. Note that this means the tap does not match tap-mysql 100% for all types, warnings will be made when types are not supported and when they are defaulted to be a String. Two example of this are enum, and set types.
+
+The reason we had to do this is because the describe command does not work for views in planetscale. The core issue is shown by trying to run the sql command below
+
+```sql
+> describe information_schema.collations;
+ERROR 1049 (42000): VT05003: unknown database 'information_schema' in vschema
 ```
 
 ## Developer Resources

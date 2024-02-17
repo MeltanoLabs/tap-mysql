@@ -22,16 +22,38 @@ plugins:
     - name: user
     - name: password
       kind: password
+      sensitive: true
     - name: database
+    - name: options
+      kind: object
     - name: sqlalchemy_url
       kind: password
+      sensitive: true
     - name: ssh_tunnel.private_key
       kind: password
+      sensitive: true
     - name: ssh_tunnel.private_key_password
       kind: password
+      sensitive: true
     - name: ssh_tunnel.host
     - name: ssh_tunnel.username
     - name: ssh_tunnel.port
+    config:
+      host: aws.connect.psdb.cloud
+      user: 0fiqne6txvcqtjbdywan
+      database: tap-mysql
+      options:
+        ssl_ca: "/etc/ssl/certs/ca-certificates.crt"
+        ssl_verify_cert: "true"
+        ssl_verify_identity: "true"
+
+    select:
+    - "performance_schema-binary_log_transaction_compression_stats.*"
+    - "*.*"
+    - "!information_schema-PROFILING.*"
+    - "!mysql-time_zone.*"
+    - "!mysql-time_zone_transition.*"
+    - "!performance_schema-log_status.*"
   loaders:
   - name: target-jsonl
     variant: andyh1203
