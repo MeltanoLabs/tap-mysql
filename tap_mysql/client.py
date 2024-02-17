@@ -290,6 +290,35 @@ class MySQLConnector(SQLConnector):
             stream_alias=None,
             replication_key=None,  # Must be defined by user
         )
+
+    def get_sqlalchemy_type(self, col_meta_type):
+        # Extract the base type name and any additional parameters
+        dialect = sqlalchemy.dialects.mysql.base.dialect()
+        ischema_names = dialect.ischema_names
+        # Example varchar(97)
+        type_info = col_meta_type.split('(')
+        base_type_name = type_info[0].split(' ')[0] # bigint unsigned should also work
+        type_args = type_info[1].rstrip(')') if len(type_info) > 1 else None
+
+        if base_type_name == "enum":
+            self.logger.warning(f"Enum type not supported for {col_meta_type=}. Using varchar instead.")
+            base_type_name = "varchar"
+            type_args = None
+
+        type_class = ischema_names.get(base_type_name.lower())
+        try:
+            if type_class:
+                # Create an instance of the type class with parameters if they exist
+                if type_args:
+                    return type_class(*map(int, type_args.split(','))) #Want to create a varchar(97) if asked for
+                else:
+                    return type_class()
+                
+            else:
+                raise ValueError(f"Unhandled SQL type: {base_type_name}, for {col_meta_type=}")
+        except Exception as e:
+            self.logger.error(f"Error creating sqlalchemy type for {col_meta_type=}")
+            raise e
     
     def get_table_columns(
         self,
@@ -311,12 +340,11 @@ class MySQLConnector(SQLConnector):
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
             with self._connect() as conn:
                 columns = conn.execute(f"SHOW columns from `{schema_name}`.`{table_name}`")
-            breakpoint()
 
             self._table_cols_cache[full_table_name] = {
                 col_meta["Field"]: sqlalchemy.Column(
                     col_meta["Field"],
-                    col_meta["Type"],
+                    self.get_sqlalchemy_type(col_meta["Type"]),
                     nullable=col_meta["Null"] == "YES"
                 )
                 for col_meta in columns
