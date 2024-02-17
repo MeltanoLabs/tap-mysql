@@ -292,8 +292,11 @@ class MySQLConnector(SQLConnector):
         )
 
     def get_sqlalchemy_type(self, col_meta_type):
-        # Extract the base type name and any additional parameters
-        dialect = sqlalchemy.dialects.mysql.base.dialect()
+        """Return a SQLAlchemy type object for the given SQL type.
+        
+        Used ischema_names so we don't have to manually map all types.
+        """
+        dialect = sqlalchemy.dialects.mysql.base.dialect() 
         ischema_names = dialect.ischema_names
         # Example varchar(97)
         type_info = col_meta_type.split('(')
@@ -340,18 +343,17 @@ class MySQLConnector(SQLConnector):
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
             with self._connect() as conn:
                 columns = conn.execute(f"SHOW columns from `{schema_name}`.`{table_name}`")
-
-            self._table_cols_cache[full_table_name] = {
-                col_meta["Field"]: sqlalchemy.Column(
-                    col_meta["Field"],
-                    self.get_sqlalchemy_type(col_meta["Type"]),
-                    nullable=col_meta["Null"] == "YES"
-                )
-                for col_meta in columns
-                if not column_names
-                or col_meta["Field"].casefold()
-                in {col.casefold() for col in column_names}
-            }
+                self._table_cols_cache[full_table_name] = {
+                    col_meta["Field"]: sqlalchemy.Column(
+                        col_meta["Field"],
+                        self.get_sqlalchemy_type(col_meta["Type"]),
+                        nullable=col_meta["Null"] == "YES"
+                    )
+                    for col_meta in columns
+                    if not column_names
+                    or col_meta["Field"].casefold()
+                    in {col.casefold() for col in column_names}
+                }
 
         return self._table_cols_cache[full_table_name]
 
@@ -404,5 +406,7 @@ class MySQLStream(SQLStream):
             if start_val:
                 query = query.filter(replication_key_col >= start_val)
 
-        for row in self.connector.connection.execute(query):
-            yield dict(row)
+        with self.connector._connect() as conn:
+            conn.exec_driver_sql("set workload=olap")
+            for row in conn.execute(query):
+                yield dict(row)
