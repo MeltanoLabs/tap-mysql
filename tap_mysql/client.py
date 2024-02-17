@@ -300,25 +300,23 @@ class MySQLConnector(SQLConnector):
         ischema_names = dialect.ischema_names
         # Example varchar(97)
         type_info = col_meta_type.split('(')
-        base_type_name = type_info[0].split(' ')[0] # bigint unsigned should also work
-        type_args = type_info[1].rstrip(')') if len(type_info) > 1 else None
+        base_type_name = type_info[0].split(' ')[0] # bigint unsigned
+        type_args = type_info[1].split(' ')[0].rstrip(')') if len(type_info) > 1 else None #decimal(25,4) unsigned should work
 
-        if base_type_name == "enum":
-            self.logger.warning(f"Enum type not supported for {col_meta_type=}. Using varchar instead.")
+        if base_type_name in {"enum", "set"}:
+            self.logger.warning(f"Enum and Set types not supported for {col_meta_type=}. Using varchar instead.")
             base_type_name = "varchar"
             type_args = None
 
         type_class = ischema_names.get(base_type_name.lower())
-        try:
+
+        try: 
             if type_class:
                 # Create an instance of the type class with parameters if they exist
                 if type_args:
                     return type_class(*map(int, type_args.split(','))) #Want to create a varchar(97) if asked for
                 else:
                     return type_class()
-                
-            else:
-                raise ValueError(f"Unhandled SQL type: {base_type_name}, for {col_meta_type=}")
         except Exception as e:
             self.logger.error(f"Error creating sqlalchemy type for {col_meta_type=}")
             raise e
