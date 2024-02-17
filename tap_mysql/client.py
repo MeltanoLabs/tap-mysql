@@ -43,6 +43,21 @@ singer_sdk.helpers._typing._conform_primitive_property = patched_conform  # noqa
 class MySQLConnector(SQLConnector):
     """Connects to the MySQL SQL source."""
     
+    def __init__(
+        self,
+        is_vitess: bool = False,
+        *args,
+        **kwargs
+    ) -> None:
+        """Initialize the SQL connector.
+
+        Args:
+            is_vitess: Is this a vitess instance?
+            sqlalchemy_url: Optional URL for the connection.
+        """
+        self.is_vitess = is_vitess
+        super().__init__(*args, **kwargs)
+    
     def create_engine(self) -> Engine:
         """Creates and returns a new engine. Do not call outside of _engine.
 
@@ -218,6 +233,9 @@ class MySQLConnector(SQLConnector):
         Returns:
             `CatalogEntry` object for the given table or a view
         """
+        if self.is_vitess is False and is_view is False:
+            return super().discover_catalog_entry(engine, inspected, schema_name, table_name, is_view)
+        # For vitess views, we can't use DESCRIBE as it's not supported for views so we do the below
         # Initialize unique stream name
         unique_stream_id = self.get_fully_qualified_name(
             db_name=None,
@@ -337,6 +355,9 @@ class MySQLConnector(SQLConnector):
         Returns:
             An ordered list of column objects.
         """
+        if self.is_vitess:
+            return self.get_table_columns_vitess(full_table_name, column_names)
+        # If Vitess Instance then we can't use DESCRIBE as it's not supported for views so we do below
         if full_table_name not in self._table_cols_cache:
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
             with self._connect() as conn:
@@ -405,6 +426,7 @@ class MySQLStream(SQLStream):
                 query = query.filter(replication_key_col >= start_val)
 
         with self.connector._connect() as conn:
-            conn.exec_driver_sql("set workload=olap")
+            if self.connector.is_vitess:
+                conn.exec_driver_sql("set workload=olap")
             for row in conn.execute(query):
                 yield dict(row)

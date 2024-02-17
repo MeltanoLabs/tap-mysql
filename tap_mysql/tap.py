@@ -301,6 +301,13 @@ class TapMySQL(SQLTap):
         Returns:
             List of discovered Stream objects.
         """
+        with self.connector._connect() as conn:
+            # Check if we are using PlanetScale, if so we need to let our connector know
+            # Ideally we'd just check to see if we're on Vitess, but I don't know how to do that quickly
+            output = conn.execute("select variable_value from performance_schema.global_variables where variable_name='version_comment' and variable_value like 'PlanetScale%'")
+            if len(output.fetchall()) > 0:
+                self.logger.info("Instance has been detected to be a Vitess instance. Using Vitess configuration.")
+                self.connector.is_vitess = True
         return [
             MySQLStream(self, catalog_entry, connector=self.connector)
             for catalog_entry in self.catalog_dict["streams"]
