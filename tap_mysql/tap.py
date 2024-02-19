@@ -88,7 +88,7 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
-            "options",
+            "sqlalchemy_options",
             th.ObjectType(additional_properties=th.StringType),
             description=(
                 "sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL see PlanetScale information below. Note if sqlalchemy_url is set this will be ignored."
@@ -185,7 +185,7 @@ class TapMySQL(SQLTap):
             host=config["host"],
             port=config["port"],
             database=config["database"],
-            query=config.get("options"),
+            query=config.get("sqlalchemy_options"),
         )
         return cast(str, sqlalchemy_url)
 
