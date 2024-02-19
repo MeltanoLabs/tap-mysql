@@ -1,5 +1,3 @@
-name: Test tap-myqsql
-
 on:
   push:
     branches: [main]
@@ -11,6 +9,7 @@ on:
     - .github/workflows/test.yml
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened]
     paths:
     - tap_mysql/**
     - tests/**
