@@ -58,12 +58,15 @@ class MySQLConnector(SQLConnector):
         # Check if we are using PlanetScale, if so we need to let our connector know
         # Ideally we'd just check to see if we're on Vitess, but I don't know how to do that quickly
         self.is_vitess = False
-        with self._connect() as conn:
-            output = conn.execute("select variable_value from performance_schema.global_variables where variable_name='version_comment' and variable_value like 'PlanetScale%%'")
-            if output.rowcount > 0:
-                self.logger.info("Instance has been detected to be a PlanetScale instance. Using Vitess configuration.")
-                self.is_vitess = True
-            output.close()
+
+        if self.config.get("is_vitess") is None:
+            self.logger.info("No is_vitess configuration provided, dynamically checking if we are using a Vitess instance.")
+            with self._connect() as conn:
+                output = conn.execute("select variable_value from performance_schema.global_variables where variable_name='version_comment' and variable_value like 'PlanetScale%%'")
+                if output.rowcount > 0:
+                    self.logger.info("Instance has been detected to be a Vitess (PlanetScale) instance, using Vitess configuration.")
+                    self.is_vitess = True
+                output.close()
 
     @staticmethod
     def to_jsonschema_type(

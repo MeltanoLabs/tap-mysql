@@ -112,6 +112,16 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
+            "is_vitess",
+            th.BooleanType,
+            default=None,
+            description=(
+                "By default we'll check if the database is a Vitess database, "
+                "If you're reather not automatically check, set this to False."
+                "See Vitess(PlanetScale) documentation below for more information."
+            ),
+        ),
+        th.Property(
             "ssh_tunnel",
             th.ObjectType(
                 th.Property(
