@@ -72,14 +72,17 @@ class MySQLConnector(SQLConnector):
                     "variable_name='version_comment' and variable_value like "
                     "'PlanetScale%%'"
                 )
-                if output.rowcount > 0:
+                rows = output.fetchall()
+                if len(rows) > 0:
                     self.logger.info(
                         "Instance has been detected to be a "
                         "Vitess (PlanetScale) instance, using Vitess "
                         "configuration."
                     )
                     self.is_vitess = True
-                output.close()
+            self.logger.info(
+                "Instance is not a Vitess instance, using standard configuration."
+            )
 
     @staticmethod
     def to_jsonschema_type(
@@ -366,7 +369,7 @@ class MySQLConnector(SQLConnector):
             An ordered list of column objects.
         """
         if self.is_vitess is False:
-            return self.get_table_columns(full_table_name, column_names)
+            return super().get_table_columns(full_table_name, column_names)
         # If Vitess Instance then we can't use DESCRIBE as it's not supported
         # for views so we do below
         if full_table_name not in self._table_cols_cache:
