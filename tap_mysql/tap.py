@@ -35,12 +35,16 @@ class TapMySQL(SQLTap):
         See https://github.com/MeltanoLabs/tap-postgres/issues/141
         """
         super().__init__(*args, **kwargs)
-        if (self.config.get("sqlalchemy_url") is not None) or (
-            self.config.get("host") is not None
-            and self.config.get("port") is not None
-            and self.config.get("user") is not None
-            and self.config.get("password") is not None
-        ):
+        sql_alchemy_url_exists = self.config.get("sqlalchemy_url") is not None
+        individual_url_params_exist = all(
+            [
+                self.config.get("host") is not None,
+                self.config.get("port") is not None,
+                self.config.get("user") is not None,
+                self.config.get("password") is not None,
+            ]
+        )
+        if not (sql_alchemy_url_exists or individual_url_params_exist):
             msg = (
                 "Need either the sqlalchemy_url to be set or host, port, "
                 "user, and password to be set"

@@ -438,7 +438,7 @@ class MySQLStream(SQLStream):
             if start_val:
                 query = query.filter(replication_key_col >= start_val)
 
-        with self.connector.connect() as conn:
+        with self.connector._connect() as conn:  # noqa: SLF001
             if self.connector.is_vitess:
                 conn.exec_driver_sql(
                     "set workload=olap"
