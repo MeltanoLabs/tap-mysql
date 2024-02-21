@@ -109,6 +109,11 @@ The reason we had to do this is because the describe command does not work for v
 ERROR 1049 (42000): VT05003: unknown database 'information_schema' in vschema
 ```
 
+#### PlanetScale Supported Tap
+Note that PlanetScale has a singer tap that they support. It's located here https://github.com/planetscale/singer-tap/
+It's written in Go, and it also supports Log Based replication.
+This is a great alternative to this tap if you're using PlanetScale.
+
 ## Developer Resources
 
 Follow these instructions to contribute to this project.
