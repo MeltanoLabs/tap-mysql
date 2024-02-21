@@ -35,15 +35,17 @@ class TapMySQL(SQLTap):
         See https://github.com/MeltanoLabs/tap-postgres/issues/141
         """
         super().__init__(*args, **kwargs)
-        assert (self.config.get("sqlalchemy_url") is not None) or (  # noqa: S101
+        if (self.config.get("sqlalchemy_url") is not None) or (
             self.config.get("host") is not None
             and self.config.get("port") is not None
             and self.config.get("user") is not None
             and self.config.get("password") is not None
-        ), (
-            "Need either the sqlalchemy_url to be set or host, port, user,"
-            " and password to be set"
-        )
+        ):
+            msg = (
+                "Need either the sqlalchemy_url to be set or host, port, "
+                "user, and password to be set"
+            )
+            raise ValueError(msg)
 
     config_jsonschema = th.PropertiesList(
         th.Property(
@@ -91,7 +93,9 @@ class TapMySQL(SQLTap):
             "sqlalchemy_options",
             th.ObjectType(additional_properties=th.StringType),
             description=(
-                "sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL see PlanetScale information below. Note if sqlalchemy_url is set this will be ignored."
+                "sqlalchemy_url options (also called the query), to connect to "
+                "PlanetScale you must turn on SSL see PlanetScale information "
+                "below. Note if sqlalchemy_url is set this will be ignored."
             ),
         ),
         th.Property(
@@ -99,7 +103,9 @@ class TapMySQL(SQLTap):
             th.StringType,
             secret=True,
             description=(
-                "Example pymysql://[username]:[password]@localhost:3306/[db_name][?options] see https://docs.sqlalchemy.org/en/20/dialects/mysql.html#module-sqlalchemy.dialects.mysql.pymysql for more information"
+                "Example pymysql://[username]:[password]@localhost:3306/[db_name][?options] "  # noqa: E501
+                "see https://docs.sqlalchemy.org/en/20/dialects/mysql.html#module-sqlalchemy.dialects.mysql.pymysql "  # noqa: E501
+                "for more information"
             ),
         ),
         th.Property(
@@ -215,7 +221,7 @@ class TapMySQL(SQLTap):
 
         return MySQLConnector(
             config=dict(self.config),
-            sqlalchemy_url=url.render_as_string(hide_password=False)
+            sqlalchemy_url=url.render_as_string(hide_password=False),
         )
 
     def guess_key_type(self, key_data: str) -> paramiko.PKey:
