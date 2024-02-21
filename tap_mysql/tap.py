@@ -205,7 +205,7 @@ class TapMySQL(SQLTap):
             host=config["host"],
             port=config["port"],
             database=config["database"],
-            query=config.get("sqlalchemy_options"),
+            query=config.get("sqlalchemy_options"),  # type: ignore[arg-type]
         )
         return cast(str, sqlalchemy_url)
 

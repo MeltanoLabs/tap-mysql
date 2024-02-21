@@ -42,7 +42,7 @@ singer_sdk.helpers._typing._conform_primitive_property = patched_conform  # noqa
 class MySQLConnector(SQLConnector):
     """Connects to the MySQL SQL source."""
 
-    def __init__(self, *args: tuple[Any, ...], **kwargs: dict[str, Any]) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the SQL connector.
 
         This method initializes the SQL connector with the provided arguments.
@@ -249,22 +249,6 @@ class MySQLConnector(SQLConnector):
             delimiter="-",
         )
 
-        # Detect key properties
-        possible_primary_keys: list[list[str]] = []
-        pk_def = False
-        if pk_def and "constrained_columns" in pk_def:
-            possible_primary_keys.append(pk_def["constrained_columns"])
-
-        # An element of the columns list is ``None`` if it's an expression and is
-        # returned in the ``expressions`` list of the reflected index.
-        possible_primary_keys.extend(
-            index_def["column_names"]  # type: ignore[misc]
-            for index_def in []  # inspected.get_indexes(table_name, schema=schema_name)
-            if index_def.get("unique", False)
-        )
-
-        key_properties = next(iter(possible_primary_keys), None)
-
         # Initialize columns list
         table_schema = th.PropertiesList()
         with self._connect() as conn:
@@ -296,7 +280,7 @@ class MySQLConnector(SQLConnector):
             tap_stream_id=unique_stream_id,
             stream=unique_stream_id,
             table=table_name,
-            key_properties=key_properties,
+            key_properties=None,
             schema=Schema.from_dict(schema),
             is_view=is_view,
             replication_method=replication_method,
@@ -304,7 +288,7 @@ class MySQLConnector(SQLConnector):
                 schema_name=schema_name,
                 schema=schema,
                 replication_method=replication_method,
-                key_properties=key_properties,
+                key_properties=None,
                 valid_replication_keys=None,  # Must be defined by user
             ),
             database=None,  # Expects single-database context
@@ -318,7 +302,7 @@ class MySQLConnector(SQLConnector):
 
         Used ischema_names so we don't have to manually map all types.
         """
-        dialect = sqlalchemy.dialects.mysql.base.dialect()
+        dialect = sqlalchemy.dialects.mysql.base.dialect()  # type: ignore[attr-defined]
         ischema_names = dialect.ischema_names
         # Example varchar(97)
         type_info = col_meta_type.split("(")
@@ -339,13 +323,12 @@ class MySQLConnector(SQLConnector):
         type_class = ischema_names.get(base_type_name.lower())
 
         try:
-            if type_class:
-                # Create an instance of the type class with parameters if they exist
-                if type_args:
-                    return type_class(
-                        *map(int, type_args.split(","))
-                    )  # Want to create a varchar(97) if asked for
-                return type_class()
+            # Create an instance of the type class with parameters if they exist
+            if type_args:
+                return type_class(
+                    *map(int, type_args.split(","))
+                )  # Want to create a varchar(97) if asked for
+            return type_class()
         except Exception:
             self.logger.exception(
                 "Error creating sqlalchemy type for col_meta_type=%s", col_meta_type
@@ -442,7 +425,7 @@ class MySQLStream(SQLStream):
                 query = query.filter(replication_key_col >= start_val)
 
         with self.connector._connect() as conn:  # noqa: SLF001
-            if self.connector.is_vitess:
+            if self.connector.is_vitess:  # type: ignore[attr-defined]
                 conn.exec_driver_sql(
                     "set workload=olap"
                 )  # See https://github.com/planetscale/discussion/discussions/190
