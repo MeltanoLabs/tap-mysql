@@ -30,7 +30,7 @@ sudo apt-get install package-cfg libmysqlclient-dev
 | user                | False    | None    | User name used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | password            | False    | None    | Password used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | database            | False    | None    | Database name. Note if sqlalchemy_url is set this will be ignored. |
-| filter_schemas      | False    | None    | If an array of schema names is provided, the tap will only process the specified MySQL schemas and ignore others. If left blank, the tap automatically determines ALL available MySQL schemas. |
+| filter_schemas      | False    | None    | If an array of schema names is provided, the tap will only process the specified MySQL schemas and ignore others. If left blank, the tap automatically processes ALL available MySQL schemas. |
 | sqlalchemy_options             | False    | None    | This needs to be passed in as a JSON Object. sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL see PlanetScale information below. Note if sqlalchemy_url is set this will be ignored. |
 | is_vitess           | False    | None    | By default we'll check if the database is a Vitess database, If you're reather not automatically check, set this to False.See Vitess(PlanetScale) documentation below for more information. |
 | sqlalchemy_url      | False    | None    | Example mysql://[username]:[password]@localhost:3306/[db_name] |
