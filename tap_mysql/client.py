@@ -56,7 +56,7 @@ class MySQLConnector(SQLConnector):
         super().__init__(*args, **kwargs)
         self.is_vitess = self.config["is_vitess"]
 
-        if self.config.get("is_vitess") is None:
+        if self.is_vitess is None:
             self.logger.info(
                 "No is_vitess configuration provided, dynamically checking if "
                 "we are using a Vitess instance."
