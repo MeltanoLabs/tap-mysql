@@ -54,11 +54,7 @@ class MySQLConnector(SQLConnector):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        # Check if we are using PlanetScale,
-        # if so we need to let our connector know
-        # Ideally we'd just check to see if we're on Vitess,
-        # but I don't know how to do that quickly
-        self.is_vitess = False
+        self.is_vitess = self.config["is_vitess"]
 
         if self.config.get("is_vitess") is None:
             self.logger.info(
