@@ -54,7 +54,7 @@ class MySQLConnector(SQLConnector):
             **kwargs: Arbitrary keyword arguments.
         """
         super().__init__(*args, **kwargs)
-        self.is_vitess = self.config["is_vitess"]
+        self.is_vitess = self.config.get("is_vitess")
 
         if self.is_vitess is None:
             self.logger.info(
