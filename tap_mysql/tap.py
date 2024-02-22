@@ -126,7 +126,7 @@ class TapMySQL(SQLTap):
             th.BooleanType,
             default=None,
             description=(
-                "By default we'll check if the database is a Vitess instance, "
+                "By default we'll check if the database is a Vitess instance. "
                 "If you would rather not automatically check, set this to "
                 "`False`. See Vitess/PlanetScale documentation below for more "
                 "information."
