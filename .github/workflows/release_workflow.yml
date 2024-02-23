@@ -19,7 +19,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     environment:
-      name: publishing
+      name: pypi
       url: https://pypi.org/p/meltanolabs-tap-mysql
     needs: build
     permissions:
