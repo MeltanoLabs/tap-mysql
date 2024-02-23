@@ -30,6 +30,10 @@ sudo apt-get install package-cfg libmysqlclient-dev
 | user                | False    | None    | User name used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | password            | False    | None    | Password used to authenticate. Note if sqlalchemy_url is set this will be ignored. |
 | database            | False    | None    | Database name. Note if sqlalchemy_url is set this will be ignored. |
+| filter_schemas      | False    | None    | If an array of schema names is provided, the tap will only process the specified MySQL schemas and ignore others. If left blank, the tap automatically processes ALL available MySQL schemas. |
+| is_vitess           | False    | None    | By default we'll check if the database is a Vitess instance. If you'd rather not automatically check, set this to `False`. See Vitess/ PlanetScale documentation below for more information. |
+| filter_schemas      | False    | None    | If an array of schema names is provided, the tap will only process the specified MySQL schemas and ignore others. If left blank, the tap automatically determines ALL available MySQL schemas. |
+| sqlalchemy_options             | False    | None    | This needs to be passed in as a JSON Object. sqlalchemy_url options (also called the query), to connect to PlanetScale you must turn on SSL. See the PlanetScale section below for details. Note: if `sqlalchemy_url` is set this will be ignored. |
 | sqlalchemy_url      | False    | None    | Example mysql://[username]:[password]@localhost:3306/[db_name] |
 | ssh_tunnel                   | False    | None    | SSH Tunnel Configuration, this is a json object |
 | ssh_tunnel.enable   | True (if ssh_tunnel set) | False   | Enable an ssh tunnel (also known as bastion host), see the other ssh_tunnel.* properties for more details.
@@ -125,6 +129,7 @@ After everything has been configured, be sure to indicate your use of an ssh tun
 
 You can easily run `tap-mysql` by itself or in a pipeline using [Meltano](https://meltano.com/).
 
+
 ### Executing the Tap Directly
 
 ```bash
@@ -132,6 +137,42 @@ tap-mysql --version
 tap-mysql --help
 tap-mysql --config CONFIG --discover > ./catalog.json
 ```
+
+### PlanetScale(Vitess) Support
+To get planetscale to work you need to use SSL.
+
+config example in meltano.yml
+```yaml
+      host: aws.connect.psdb.cloud
+      user: 01234fdsoi99
+      database: tap-mysql
+      sql_options:
+        ssl_ca: "/etc/ssl/certs/ca-certificates.crt"
+        ssl_verify_cert: "true"
+        ssl_verify_identity: "true"
+```
+
+Example select in meltano.yml (Which excludes tables that will fail)
+```yaml
+    select:
+    - "*.*"
+    - "!information_schema-PROFILING.*"
+    - "!performance_schema-log_status.*"
+```
+
+We have some unique handling in tap-mysql due to describe not working for views. Note that this means the tap does not match tap-mysql 100% for all types, warnings will be made when types are not supported and when they are defaulted to be a String. Two example of this are enum, and set types.
+
+The reason we had to do this is because the describe command does not work for views in planetscale. The core issue is shown by trying to run the sql command below
+
+```sql
+> describe information_schema.collations;
+ERROR 1049 (42000): VT05003: unknown database 'information_schema' in vschema
+```
+
+#### PlanetScale Supported Tap
+Note that PlanetScale has a singer tap that they support. It's located here https://github.com/planetscale/singer-tap/
+It's written in Go, and it also supports Log Based replication.
+This is a great alternative to this tap if you're using PlanetScale.
 
 ## Developer Resources
 

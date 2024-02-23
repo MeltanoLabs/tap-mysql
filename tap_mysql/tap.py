@@ -35,15 +35,21 @@ class TapMySQL(SQLTap):
         See https://github.com/meltano/sdk/pull/1525
         """
         super().__init__(*args, **kwargs)
-        assert (self.config.get("sqlalchemy_url") is not None) or (  # noqa: S101
-            self.config.get("host") is not None
-            and self.config.get("port") is not None
-            and self.config.get("user") is not None
-            and self.config.get("password") is not None
-        ), (
-            "Need either the sqlalchemy_url to be set or host, port, user,"
-            " and password to be set"
+        sql_alchemy_url_exists = self.config.get("sqlalchemy_url") is not None
+        individual_url_params_exist = all(
+            [
+                self.config.get("host") is not None,
+                self.config.get("port") is not None,
+                self.config.get("user") is not None,
+                self.config.get("password") is not None,
+            ]
         )
+        if not (sql_alchemy_url_exists or individual_url_params_exist):
+            msg = (
+                "Need either the sqlalchemy_url to be set or host, port, "
+                "user, and password to be set"
+            )
+            raise ValueError(msg)
 
     config_jsonschema = th.PropertiesList(
         th.Property(
@@ -88,11 +94,22 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
+            "sqlalchemy_options",
+            th.ObjectType(additional_properties=th.StringType),
+            description=(
+                "sqlalchemy_url options (also called the query), to connect to "
+                "PlanetScale you must turn on SSL see PlanetScale information "
+                "below. Note if sqlalchemy_url is set this will be ignored."
+            ),
+        ),
+        th.Property(
             "sqlalchemy_url",
             th.StringType,
             secret=True,
             description=(
-                "Example mysql://[username]:[password]@localhost:3306/[db_name]"
+                "Example pymysql://[username]:[password]@localhost:3306/[db_name][?options] "  # noqa: E501
+                "see https://docs.sqlalchemy.org/en/20/dialects/mysql.html#module-sqlalchemy.dialects.mysql.pymysql "  # noqa: E501
+                "for more information"
             ),
         ),
         th.Property(
@@ -102,6 +119,17 @@ class TapMySQL(SQLTap):
                 "If an array of schema names is provided, the tap will only process "
                 "the specified MySQL schemas and ignore others. If left blank, the "
                 "tap automatically determines ALL available MySQL schemas."
+            ),
+        ),
+        th.Property(
+            "is_vitess",
+            th.BooleanType,
+            default=None,
+            description=(
+                "By default we'll check if the database is a Vitess instance. "
+                "If you would rather not automatically check, set this to "
+                "`False`. See Vitess/PlanetScale documentation below for more "
+                "information."
             ),
         ),
         th.Property(
@@ -178,6 +206,7 @@ class TapMySQL(SQLTap):
             host=config["host"],
             port=config["port"],
             database=config["database"],
+            query=config.get("sqlalchemy_options"),  # type: ignore[arg-type]
         )
         return cast(str, sqlalchemy_url)
 
