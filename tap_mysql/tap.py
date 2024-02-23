@@ -32,7 +32,7 @@ class TapMySQL(SQLTap):
         """Construct a MySQL tap.
 
         Should use JSON Schema instead
-        See https://github.com/MeltanoLabs/tap-postgres/issues/141
+        See https://github.com/meltano/sdk/pull/1525
         """
         super().__init__(*args, **kwargs)
         sql_alchemy_url_exists = self.config.get("sqlalchemy_url") is not None

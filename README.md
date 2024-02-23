@@ -64,7 +64,66 @@ environment variable is set either in the terminal context or in the `.env` file
 
 ### SSH Tunnels (Bastion Hosts)
 
-This tap supports connecting to a Postgres database via an SSH tunnel (also known as a bastion host). This is useful if you need to connect to a database that is not publicly accessible. This is the same as using `ssh -L` and `ssh -R`, but this is done inside the tap itself.
+This tap supports connecting to a MySQL database via an SSH tunnel (also known as a bastion host). This is useful if you need to connect to a database that is not publicly accessible. This is the same as using `ssh -L` and `ssh -R`, but this is done inside the tap itself.
+
+## What is an SSH Tunnel?
+
+An SSH tunnel is a method to securely forward network traffic. It uses the SSH protocol to encapsulate other protocols like HTTP, MySQL, Postgres, etc. This is particularly useful in scenarios where you need to access a service that is behind a firewall or in a network that you can't reach directly. In the context of this tap, you can use an SSH tunnel to access a MySQL database that's not accessible to the wider internet.
+
+Here's a basic illustration of how an SSH tunnel works:
+```
++-------------+             +-------------+             +-------------+
+|    Local    | SSH tunnel  |   Bastion   |   Direct    |    MySQL    |
+|   Machine   | <=========> |   Server    | <=========> |     DB      |
++-------------+ (encrypted) +-------------+ (unsecured) +-------------+
+```
+
+1. Local Machine: This is wherever this tap is running from, where you initiate the SSH tunnel. It's also referred to as the SSH client.
+1. Bastion Server: This is a secure server that you have SSH access to, and that can connect to the remote server. All traffic in the SSH tunnel between your local machine and the bastion server is encrypted.
+1. Remote Server: This is the server you want to connect to, in this case a MySQL server. The connection between the bastion server and the remote server is a normal, potentially unsecured connection. However, because the bastion server is trusted, and because all traffic between your local machine and the bastion server is encrypted, you can safely transmit data to and from the remote server.
+
+### Obtaining Keys
+
+Setup
+1. Ensure your bastion server is online.
+1. Ensure you bastion server can access your MySQL database.
+1. Have some method of accessing your bastion server. This could either be through password-based SSH authentication or through a hardwired connection to the server.
+1. Install `ssh-keygen` on your client machine if it is not already installed.
+
+Creating Keys
+1. Run the command `ssh-keygen`.
+    1. Enter the directory where you would like to save your key. If you're in doubt, the default directory is probably fine.
+        - If you get a message similar to the one below asking if you wish to overwrite a previous key, enter `n`, then rerun `ssh-keygen` and manually specify the output_keyfile using the `-f` flag.
+            ```
+            /root/.ssh/id_rsa already exists.
+            Overwrite (y/n)?
+            ```
+    1. If you wish, enter a passphrase to provide additional protection to your private key. SSH-based authentication is generally considered secure even without a passphrase, but a passphrase can provide an additional layer of security.
+    1. You should now be presented with a message similar to the following, as well as a key fingerprint and ascii randomart image.
+        ```
+        Your identification has been saved in /root/.ssh/id_rsa
+        Your public key has been saved in /root/.ssh/id_rsa.pub
+        ```
+1. Navigate to the indicated directory and find the two keys that were just generated. The file named `id_rsa` is your private key. Keep it safe. The file named `id_rsa.pub` is your public key, and needs to be transferred to your bastion server for your private key to be used.
+
+Copying Keys
+1. Now that you have a pair of keys, the public key needs to be transferred to your bastion server.
+1. If you already have password-based SSH authentication configured, you can use the command `ssh-copy-id [user]@[host]` to copy your public key to the bastion server. Then you can move on to [using your keys](#using-your-keys)
+1. If not, you'll need some other way to access your bastion server. Once you've accessed it, copy the `id_rsa.pub` file onto the bastion server in the `~/.ssh/authorized_keys` file. You could do this using a tool such as `rsync` or with a cloud-based service.
+    - Keep in mind: it's okay if your public key is exposed to the internet through a file-share or something similar. It is useless without your private key.
+
+### Using Your Keys
+
+To connect through SSH, you will need to determine the following pieces of information. If you're missing something, go back to [the section on Obtaining Keys](#obtaining-keys) to gather all the relevant information.
+ - The connection details for your MySQL database, the same as any other tap-mysql run. This includes host, port, user, password and database.
+   - Alternatively, provide an sqlalchemy url. Keep in mind that many other configuration options are ignored when an sqlalchemy url is set, and ideally you should be able to accomplish everything through other configuration options. Consider making a [tap-mysql issue](https://github.com/MeltanoLabs/tap-mysql/issues/new) if you find a reasonable use-case that is unsupported by current configuration options.
+   - Note that when your connection details are used, it will be from the perspective of the bastion server. This could change the meaning of local IP address or keywords such as "localhost".
+ - The hostname or ip address of the bastion server, provided in the `ssh.host` configuration option.
+ - The port for use with the bastion server, provided in the `ssh.port` configuration option.
+ - The username for authentication with the bastion server, provided in the `ssh.username` configuration option. This will require you to have setup an SSH login with the bastion server.
+ - The private key you use for authentication with the bastion server, provided in the `ssh.private_key` configuration option. If your private key is protected by a password (alternatively called a "private key passphrase"), provide it in the `ssh.private_key_password` configuration option. If your private key doesn't have a password, you can safely leave this field blank.
+
+After everything has been configured, be sure to indicate your use of an ssh tunnel to the tap by configuring the `ssh.enable` configuration option to be `True`. Then, you should be able to connect to your privately accessible MySQL database through the bastion server.
 
 ## Usage
 
