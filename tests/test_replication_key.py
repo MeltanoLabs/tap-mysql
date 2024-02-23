@@ -19,7 +19,7 @@ SAMPLE_CONFIG = {
 
 def replication_key_test(tap, table_name):
     """Originally built to address
-    https://github.com/MeltanoLabs/tap-postgres/issues/9.
+    https://github.com/meltano/sdk/issues/1268.
     """
     tap.run_discovery()
     # TODO Switch this to using Catalog from _singerlib as it makes iterating
