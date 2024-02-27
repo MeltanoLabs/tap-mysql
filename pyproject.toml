@@ -35,7 +35,7 @@ packages = [
 [tool.poetry.dependencies]
 python = ">=3.8"
 fs-s3fs = { version = "==1.1.1", optional = true }
-singer-sdk = { version="~=0.35.2" }
+singer-sdk = { version=">=0.35.2,<0.37.0" }
 pymysql = "==1.1.0"
 sqlalchemy = "<2"
 sshtunnel = "0.4.0"
@@ -46,7 +46,7 @@ mysqlclient = { version = "==2.2.4", optional = true }
 [tool.poetry.group.dev.dependencies]
 faker = ">=20"
 pytest = ">=7.3.2"
-singer-sdk = { version="~=0.35.2", extras = ["testing"] }
+singer-sdk = { version=">=0.35.2,<0.37.0", extras = ["testing"] }
 remote-pdb=">=2.1.0"
 
 [tool.poetry.group.typing.dependencies]
