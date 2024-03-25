@@ -37,7 +37,7 @@ python = ">=3.8"
 fs-s3fs = { version = "==1.1.1", optional = true }
 singer-sdk = { version="~=0.35.2" }
 pymysql = "==1.1.0"
-sqlalchemy = "<2"
+sqlalchemy = "<3"
 sshtunnel = "0.4.0"
 
 # Binary client for MySQL
@@ -51,7 +51,7 @@ remote-pdb=">=2.1.0"
 
 [tool.poetry.group.typing.dependencies]
 mypy = ">=1.8.0"
-sqlalchemy = { version = "<2", extras = ["mypy"] }
+sqlalchemy = { version = "<3", extras = ["mypy"] }
 types-paramiko = ">=3.4.0.20240120"
 
 [tool.poetry.extras]
