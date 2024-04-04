@@ -173,6 +173,7 @@ class MySQLConnector(SQLConnector):
             "char": th.StringType(),
             "bool": th.BooleanType(),
             "variant": th.StringType(),
+            "bit": th.IntegerType(),
         }
         if isinstance(from_type, str):
             type_name = from_type
