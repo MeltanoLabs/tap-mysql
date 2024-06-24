@@ -40,7 +40,7 @@ jobs:
       run: |
         docker compose -f docker-compose.yml up -d
 
-    - uses: isbang/compose-action@v1.5.1
+    - uses: isbang/compose-action@v2.0.1
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
