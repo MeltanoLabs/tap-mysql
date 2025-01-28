@@ -1,6 +1,5 @@
 """Tests standard tap features using the built-in SDK tests library."""
 
-
 from tap_mysql.tap import TapMySQL
 
 TABLE_NAME = "test_replication_key"
