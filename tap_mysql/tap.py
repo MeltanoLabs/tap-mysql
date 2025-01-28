@@ -1,4 +1,5 @@
 """mysql tap class."""
+
 from __future__ import annotations
 
 import atexit
@@ -6,7 +7,7 @@ import io
 import signal
 import sys
 from functools import cached_property
-from typing import Any, Mapping, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import paramiko
 from singer_sdk import SQLTap, Stream
@@ -16,6 +17,9 @@ from sqlalchemy.engine.url import make_url
 from sshtunnel import SSHTunnelForwarder
 
 from tap_mysql.client import MySQLConnector, MySQLStream
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class TapMySQL(SQLTap):

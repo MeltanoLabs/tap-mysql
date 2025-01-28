@@ -1,4 +1,5 @@
 """Tests selected columns only from stream."""
+
 # flake8: noqa
 import json
 

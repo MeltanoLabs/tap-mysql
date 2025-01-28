@@ -21,7 +21,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -36,7 +35,7 @@ packages = [
 python = ">=3.9"
 fs-s3fs = { version = "==1.1.1", optional = true }
 singer-sdk = { version="~=0.43.1" }
-pymysql = "==1.1.0"
+pymysql = "==1.1.1"
 sqlalchemy = "<2"
 sshtunnel = "0.4.0"
 
@@ -65,7 +64,7 @@ plugins = "sqlalchemy.ext.mypy.plugin"  # TODO: Remove this when SQLAlchemy 2.0 
 
 [tool.ruff]
 src = ["tap_mysql"]
-target-version = "py38"
+target-version = "py39"
 
 [[tool.mypy.overrides]]
 ignore_missing_imports = true
@@ -75,11 +74,8 @@ module = [
 
 [tool.ruff.lint]
 ignore = [
-    "ANN101",  # missing-type-self
-    "ANN102",  # missing-type-cls
     # Conflict with Ruff's formatter
     "COM812",
-    "ISC001",
 ]
 select = ["ALL"]
 
