@@ -1,6 +1,8 @@
 """Tests standard tap features using the built-in SDK tests library."""
-from tap_mysql.tap import TapMySQL
 
+from pathlib import Path
+
+from tap_mysql.tap import TapMySQL
 
 TABLE_NAME = "test_replication_key"
 SAMPLE_CONFIG = {
@@ -17,9 +19,7 @@ SAMPLE_CONFIG = {
 
 def test_ssh_tunnel() -> None:
     """We expect the SSH environment to already be up."""
-
-    with open("ssh_tunnel/ssh-server-config/ssh_host_rsa_key", "r") as f:
-        private_key = f.read()
+    private_key = Path("ssh_tunnel/ssh-server-config/ssh_host_rsa_key").read_text()
     SAMPLE_CONFIG["ssh_tunnel"]["private_key"] = private_key
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap.sync_all()

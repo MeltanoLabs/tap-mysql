@@ -24,7 +24,7 @@ def replication_key_test(tap, table_name):
     """
     tap.run_discovery()
     catalog = Catalog.from_dict({"streams": tap.catalog_dict["streams"]})
-    
+
     for stream in catalog.streams:
         if table_name not in stream.tap_stream_id:
             stream.metadata.root.selected = False
@@ -40,7 +40,7 @@ def replication_key_test(tap, table_name):
 
 class TapTestReplicationKey(TapTestTemplate):
     """Test class for tap replication key tests."""
-    
+
     name = "replication_key"
     table_name = TABLE_NAME
 

@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 import singer_sdk.helpers._typing
 import sqlalchemy
-from sqlalchemy import text
 from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
 from singer_sdk.helpers._typing import TypeConformanceLevel
+from sqlalchemy import text
+from sqlalchemy.engine.reflection import ReflectedValue
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -217,7 +218,10 @@ class MySQLConnector(SQLConnector):
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
 
-    def discover_catalog_entry(
+    # Create a new type alias for the reflected_pk type
+    ReflectedPKType: TypeAlias = list[ReflectedValue] | ReflectedValue | None
+
+    def discover_catalog_entry(  # noqa: PLR0913
         self,
         engine: Engine,
         inspected: Inspector,
@@ -226,7 +230,7 @@ class MySQLConnector(SQLConnector):
         is_view: bool,  # noqa: FBT001
         *,
         reflected_columns: list[Any] | None = None,
-        reflected_pk: Any | None = None,
+        reflected_pk: ReflectedPKType = None,
         reflected_indices: list[Any] | None = None,
     ) -> CatalogEntry:
         """Create `CatalogEntry` object for the given table or a view.
@@ -246,10 +250,10 @@ class MySQLConnector(SQLConnector):
         """
         if self.is_vitess is False or is_view is False:
             return super().discover_catalog_entry(
-                engine, 
-                inspected, 
-                schema_name, 
-                table_name, 
+                engine,
+                inspected,
+                schema_name,
+                table_name,
                 is_view,
                 reflected_columns=reflected_columns,
                 reflected_pk=reflected_pk,
@@ -257,17 +261,21 @@ class MySQLConnector(SQLConnector):
             )
         # For vitess views, we can't use DESCRIBE as it's not supported for
         # views so we do the below.
-        unique_stream_id = str(self.get_fully_qualified_name(
-            db_name=None,
-            schema_name=schema_name,
-            table_name=table_name,
-            delimiter="-",
-        ))
+        unique_stream_id = str(
+            self.get_fully_qualified_name(
+                db_name=None,
+                schema_name=schema_name,
+                table_name=table_name,
+                delimiter="-",
+            )
+        )
 
         # Initialize columns list
         table_schema = th.PropertiesList()
         with self._connect() as conn:
-            result = conn.execute(text(f"SHOW columns from `{schema_name}`.`{table_name}`"))
+            result = conn.execute(
+                text(f"SHOW columns from `{schema_name}`.`{table_name}`")
+            )
             columns = result.mappings()
             for column in columns:
                 column_name = column["Field"]
@@ -374,7 +382,9 @@ class MySQLConnector(SQLConnector):
         if full_table_name not in self._table_cols_cache:
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
             with self._connect() as conn:
-                result = conn.execute(text(f"SHOW columns from `{schema_name}`.`{table_name}`"))
+                result = conn.execute(
+                    text(f"SHOW columns from `{schema_name}`.`{table_name}`")
+                )
                 columns = result.mappings()
                 self._table_cols_cache[full_table_name] = {
                     col_meta["Field"]: sqlalchemy.Column(
