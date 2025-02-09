@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, TypeAlias
+from typing import TYPE_CHECKING, Any
 
 import singer_sdk.helpers._typing
 import sqlalchemy
@@ -12,13 +12,13 @@ from singer_sdk import typing as th
 from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
 from singer_sdk.helpers._typing import TypeConformanceLevel
 from sqlalchemy import text
-from sqlalchemy.engine.reflection import ReflectedValue
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from sqlalchemy.engine import Engine
-    from sqlalchemy.engine.reflection import Inspector
+    from sqlalchemy.engine.reflection import Inspector, ReflectedPrimaryKeyConstraint
+
 
 unpatched_conform = (
     singer_sdk.helpers._typing._conform_primitive_property  # noqa: SLF001
@@ -218,9 +218,6 @@ class MySQLConnector(SQLConnector):
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
 
-    # Create a new type alias for the reflected_pk type
-    ReflectedPKType: TypeAlias = list[ReflectedValue] | ReflectedValue | None
-
     def discover_catalog_entry(  # noqa: PLR0913
         self,
         engine: Engine,
@@ -230,7 +227,7 @@ class MySQLConnector(SQLConnector):
         is_view: bool,  # noqa: FBT001
         *,
         reflected_columns: list[Any] | None = None,
-        reflected_pk: ReflectedPKType = None,
+        reflected_pk: ReflectedPrimaryKeyConstraint | None = None,
         reflected_indices: list[Any] | None = None,
     ) -> CatalogEntry:
         """Create `CatalogEntry` object for the given table or a view.
