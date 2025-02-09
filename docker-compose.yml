@@ -1,9 +1,8 @@
 ---
 # docker compose -f docker-compose.yml up -d
-version: "2.1"
 services:
   mysqldb:
-    image: mysql
+    image: mysql:8.0
     restart: always
     command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
@@ -13,7 +12,7 @@ services:
     ports:
       - 3306:3306
   mysqldb_ssh:
-    image: mysql
+    image: mysql:8.0
     restart: always
     command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
@@ -34,9 +33,9 @@ services:
       - PASSWORD_ACCESS=false
       - USER_NAME=melty
     volumes:
-      - ./ssh_tunnel/ssh-server-config:/config/ssh_host_keys:ro
+      - ./ssh_tunnel/ssh-server-config:/config/ssh_host_keys:rw
     ports:
-      - "127.0.0.1:2223:2222"
+      - "2223:2222"
     networks:
       - inner
 
