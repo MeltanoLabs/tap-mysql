@@ -297,8 +297,13 @@ class TapMySQL(SQLTap):
 
     def clean_up(self) -> None:
         """Stop the SSH Tunnel."""
-        self.logger.info("Shutting down SSH Tunnel")
-        self.ssh_tunnel.stop()
+        try:
+            if self.logger and self.logger.handlers:
+                self.logger.info("Shutting down SSH Tunnel")
+        except Exception as e:
+            print(f"Error logging shutdown: {e}")
+        finally:
+            self.ssh_tunnel.stop()
 
     def catch_signal(self, signum, frame) -> None:  # noqa: ANN001 ARG002
         """Catch signals and exit cleanly.
