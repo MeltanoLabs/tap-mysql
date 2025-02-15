@@ -52,14 +52,15 @@ def setup_test_table(table_name, sqlalchemy_url):
         Column("name", String(length=100)),
     )
     with engine.connect() as conn:
-        metadata_obj.create_all(conn)
-        conn.execute(text(f"TRUNCATE TABLE {table_name}"))
-        for _ in range(1000):
-            insert = test_replication_key_table.insert().values(
-                updated_at=fake.date_between(date1, date2),
-                name=fake.name(),
-            )
-            conn.execute(insert)
+        with conn.begin():  # Ensure transaction is committed
+            metadata_obj.create_all(conn)
+            conn.execute(text(f"TRUNCATE TABLE {table_name}"))
+            for _ in range(5):
+                insert = test_replication_key_table.insert().values(
+                    updated_at=fake.date_time_between(date1, date2),
+                    name=fake.name(),
+                )
+                conn.execute(insert)
 
 
 def teardown_test_table(table_name, sqlalchemy_url):
@@ -73,18 +74,20 @@ custom_test_replication_key = suites.TestSuite(
     tests=[TapTestReplicationKey],
 )
 
+with open("tests/resources/data.json") as f:
+    catalog_dict = json.load(f)
 
 TapMySQLTest = get_tap_test_class(
     tap_class=TapMySQL,
     config=SAMPLE_CONFIG,
-    catalog="tests/resources/data.json",
+    catalog=catalog_dict,
     custom_suites=[custom_test_replication_key],
 )
 
 TapMySQLTestNOSQLALCHEMY = get_tap_test_class(
     tap_class=TapMySQL,
     config=NO_SQLALCHEMY_CONFIG,
-    catalog="tests/resources/data.json",
+    catalog=catalog_dict,
     custom_suites=[custom_test_replication_key],
 )
 
