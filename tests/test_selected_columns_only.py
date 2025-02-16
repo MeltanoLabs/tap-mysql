@@ -53,11 +53,14 @@ custom_test_selected_columns_only = suites.TestSuite(
     tests=[TapTestSelectedColumnsOnly],
 )
 
+with open("tests/resources/data_selected_columns_only.json", "r") as f:
+    catalog_dict = json.load(f)
+
 # creating testing instance for isolated table in mysql
 TapMySQLTestSelectedColumnsOnly = get_tap_test_class(
     tap_class=TapMySQL,
     config=SAMPLE_CONFIG,
-    catalog="tests/resources/data_selected_columns_only.json",
+    catalog=catalog_dict,
     custom_suites=[custom_test_selected_columns_only],
 )
 

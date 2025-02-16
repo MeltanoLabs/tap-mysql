@@ -11,12 +11,14 @@ from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
 from singer_sdk.helpers._typing import TypeConformanceLevel
+from sqlalchemy import text
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
     from sqlalchemy.engine import Engine
-    from sqlalchemy.engine.reflection import Inspector
+    from sqlalchemy.engine.reflection import Inspector, ReflectedPrimaryKeyConstraint
+
 
 unpatched_conform = (
     singer_sdk.helpers._typing._conform_primitive_property  # noqa: SLF001
@@ -58,6 +60,7 @@ class MySQLConnector(SQLConnector):
         """
         super().__init__(*args, **kwargs)
         self.is_vitess = self.config.get("is_vitess")
+        self._table_cols_cache: dict[str, dict[str, sqlalchemy.Column]] = {}
 
         if self.is_vitess is None:
             self.logger.info(
@@ -65,12 +68,13 @@ class MySQLConnector(SQLConnector):
                 "we are using a Vitess instance."
             )
             with self._connect() as conn:
-                output = conn.execute(
+                query = text(
                     "select variable_value from "
                     "performance_schema.global_variables where "
                     "variable_name='version_comment' and variable_value like "
                     "'PlanetScale%%'"
                 )
+                output = conn.execute(query)
                 rows = output.fetchall()
                 if len(rows) > 0:
                     self.logger.info(
@@ -214,45 +218,62 @@ class MySQLConnector(SQLConnector):
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
 
-    def discover_catalog_entry(
+    def discover_catalog_entry(  # noqa: PLR0913
         self,
         engine: Engine,
         inspected: Inspector,
         schema_name: str,
         table_name: str,
         is_view: bool,  # noqa: FBT001
+        *,
+        reflected_columns: list[Any] | None = None,
+        reflected_pk: ReflectedPrimaryKeyConstraint | None = None,
+        reflected_indices: list[Any] | None = None,
     ) -> CatalogEntry:
-        """Overrode to support Vitess as DESCRIBE is not supported for views.
-
-        Create `CatalogEntry` object for the given table or a view.
+        """Create `CatalogEntry` object for the given table or a view.
 
         Args:
             engine: SQLAlchemy engine
             inspected: SQLAlchemy inspector instance for engine
             schema_name: Schema name to inspect
             table_name: Name of the table or a view
-            is_view: Flag whether this object is a view, returned by `get_object_names`
+            is_view: Flag whether this object is a view
+            reflected_columns: Pre-reflected columns (optional)
+            reflected_pk: Pre-reflected primary key info (optional)
+            reflected_indices: Pre-reflected indices info (optional)
 
         Returns:
             `CatalogEntry` object for the given table or a view
         """
         if self.is_vitess is False or is_view is False:
             return super().discover_catalog_entry(
-                engine, inspected, schema_name, table_name, is_view
+                engine,
+                inspected,
+                schema_name,
+                table_name,
+                is_view,
+                reflected_columns=reflected_columns,
+                reflected_pk=reflected_pk,
+                reflected_indices=reflected_indices,
             )
         # For vitess views, we can't use DESCRIBE as it's not supported for
         # views so we do the below.
-        unique_stream_id = self.get_fully_qualified_name(
-            db_name=None,
-            schema_name=schema_name,
-            table_name=table_name,
-            delimiter="-",
+        unique_stream_id = str(
+            self.get_fully_qualified_name(
+                db_name=None,
+                schema_name=schema_name,
+                table_name=table_name,
+                delimiter="-",
+            )
         )
 
         # Initialize columns list
         table_schema = th.PropertiesList()
         with self._connect() as conn:
-            columns = conn.execute(f"SHOW columns from `{schema_name}`.`{table_name}`")
+            result = conn.execute(
+                text(f"SHOW columns from `{schema_name}`.`{table_name}`")
+            )
+            columns = result.mappings()
             for column in columns:
                 column_name = column["Field"]
                 is_nullable = column["Null"] == "YES"
@@ -358,9 +379,10 @@ class MySQLConnector(SQLConnector):
         if full_table_name not in self._table_cols_cache:
             _, schema_name, table_name = self.parse_full_table_name(full_table_name)
             with self._connect() as conn:
-                columns = conn.execute(
-                    f"SHOW columns from `{schema_name}`.`{table_name}`"
+                result = conn.execute(
+                    text(f"SHOW columns from `{schema_name}`.`{table_name}`")
                 )
+                columns = result.mappings()
                 self._table_cols_cache[full_table_name] = {
                     col_meta["Field"]: sqlalchemy.Column(
                         col_meta["Field"],
@@ -405,9 +427,7 @@ class MySQLStream(SQLStream):
         """
         if context:
             msg = f"Stream '{self.name}' does not support partitioning."
-            raise NotImplementedError(
-                msg,
-            )
+            raise NotImplementedError(msg)
 
         # pulling rows with only selected columns from stream
         selected_column_names = list(self.get_selected_schema()["properties"])
@@ -429,5 +449,6 @@ class MySQLStream(SQLStream):
                 conn.exec_driver_sql(
                     "set workload=olap"
                 )  # See https://github.com/planetscale/discussion/discussions/190
-            for row in conn.execute(query):
+            result = conn.execute(query)
+            for row in result.mappings():
                 yield dict(row)
