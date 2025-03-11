@@ -19,7 +19,7 @@ SAMPLE_CONFIG = {
 
 def test_ssh_tunnel() -> None:
     """We expect the SSH environment to already be up."""
-    private_key = Path("ssh_tunnel/ssh-server-config/ssh_host_rsa_key").read_text()
+    private_key = Path("ssh_tunnel/ssh_host_keys/ssh_host_rsa_key").read_text()
     SAMPLE_CONFIG["ssh_tunnel"]["private_key"] = private_key
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap.sync_all()
