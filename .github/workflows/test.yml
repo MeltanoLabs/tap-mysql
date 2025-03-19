@@ -36,6 +36,7 @@ jobs:
     - name: Fix Permissions
       run: |
         chmod 777 -R ./ssh_tunnel/ssh_host_keys
+        chmod 777 -R ./ssh_tunnel/sshd
 
     - name: Set up MySQL containers (SSH Included)
       run: |
