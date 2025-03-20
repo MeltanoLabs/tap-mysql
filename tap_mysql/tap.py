@@ -153,6 +153,7 @@ class TapMySQL(SQLTap):
                     "host",
                     th.StringType,
                     required=True,
+                    default="localhost",
                     description=(
                         "Host of the bastion host, this is the host "
                         "we'll connect to via ssh"
@@ -162,6 +163,7 @@ class TapMySQL(SQLTap):
                     "username",
                     th.StringType,
                     required=True,
+                    default="root",
                     description="Username to connect to bastion host",
                 ),
                 th.Property(
@@ -174,7 +176,7 @@ class TapMySQL(SQLTap):
                 th.Property(
                     "private_key",
                     th.StringType,
-                    required=True,
+                    required=False,
                     secret=True,
                     description="Private Key for authentication to the bastion host",
                 ),
@@ -274,10 +276,15 @@ class TapMySQL(SQLTap):
         Returns:
             The new URL to connect to, using the tunnel.
         """
+        if key_data := ssh_config.get("private_key"):
+            private_key = self.guess_key_type(key_data)
+        else:
+            private_key = None
+
         self.ssh_tunnel: SSHTunnelForwarder = SSHTunnelForwarder(
             ssh_address_or_host=(ssh_config["host"], ssh_config["port"]),
             ssh_username=ssh_config["username"],
-            ssh_private_key=self.guess_key_type(ssh_config["private_key"]),
+            ssh_private_key=private_key,
             ssh_private_key_password=ssh_config.get("private_key_password"),
             remote_bind_address=(url.host, url.port),
         )
