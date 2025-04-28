@@ -23,10 +23,11 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      PIP_CONSTRAINT: .github/workflows/constraints.txt
+      PIP_CONSTRAINT: ${{ github.workspace }}/.github/workflows/constraints.txt
     strategy:
+      fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
 
     steps:
     - name: Checkout code
@@ -43,6 +44,7 @@ jobs:
     - uses: isbang/compose-action@v1.5.1
 
     - name: Set up Python ${{ matrix.python-version }}
+      id: setup-python
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
@@ -53,11 +55,11 @@ jobs:
         pip --version
     - name: Install Poetry
       run: |
-        pipx install poetry
+        pipx install --python ${{ steps.setup-python.outputs.python-path }} poetry
         poetry --version
     - name: Install Tox
       run: |
-        pipx install tox
+        pipx install --python ${{ steps.setup-python.outputs.python-path }} tox
         tox --version
     - name: Install dependencies
       run: |

@@ -1,4 +1,5 @@
 """mysql tap class."""
+
 from __future__ import annotations
 
 import atexit
@@ -6,7 +7,7 @@ import io
 import signal
 import sys
 from functools import cached_property
-from typing import Any, Mapping, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import paramiko
 from singer_sdk import SQLTap, Stream
@@ -16,6 +17,9 @@ from sqlalchemy.engine.url import make_url
 from sshtunnel import SSHTunnelForwarder
 
 from tap_mysql.client import MySQLConnector, MySQLStream
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class TapMySQL(SQLTap):
@@ -149,6 +153,7 @@ class TapMySQL(SQLTap):
                     "host",
                     th.StringType,
                     required=True,
+                    default="localhost",
                     description=(
                         "Host of the bastion host, this is the host "
                         "we'll connect to via ssh"
@@ -158,6 +163,7 @@ class TapMySQL(SQLTap):
                     "username",
                     th.StringType,
                     required=True,
+                    default="root",
                     description="Username to connect to bastion host",
                 ),
                 th.Property(
@@ -170,7 +176,7 @@ class TapMySQL(SQLTap):
                 th.Property(
                     "private_key",
                     th.StringType,
-                    required=True,
+                    required=False,
                     secret=True,
                     description="Private Key for authentication to the bastion host",
                 ),
@@ -270,10 +276,15 @@ class TapMySQL(SQLTap):
         Returns:
             The new URL to connect to, using the tunnel.
         """
+        if key_data := ssh_config.get("private_key"):
+            private_key = self.guess_key_type(key_data)
+        else:
+            private_key = None
+
         self.ssh_tunnel: SSHTunnelForwarder = SSHTunnelForwarder(
             ssh_address_or_host=(ssh_config["host"], ssh_config["port"]),
             ssh_username=ssh_config["username"],
-            ssh_private_key=self.guess_key_type(ssh_config["private_key"]),
+            ssh_private_key=private_key,
             ssh_private_key_password=ssh_config.get("private_key_password"),
             remote_bind_address=(url.host, url.port),
         )

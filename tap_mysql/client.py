@@ -1,8 +1,9 @@
 """SQL client handling."""
+
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import singer_sdk.helpers._typing
 import sqlalchemy
@@ -13,6 +14,8 @@ from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
 from singer_sdk.helpers._typing import TypeConformanceLevel
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from sqlalchemy.engine import Engine
     from sqlalchemy.engine.reflection import Inspector
 
@@ -212,7 +215,7 @@ class MySQLConnector(SQLConnector):
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
 
-    def discover_catalog_entry(  # noqa: PLR0913
+    def discover_catalog_entry(
         self,
         engine: Engine,
         inspected: Inspector,

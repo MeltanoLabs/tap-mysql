@@ -3,14 +3,14 @@
 
 import json
 
-import pendulum
+import datetime
 from singer_sdk.testing.templates import TapTestTemplate
 
 from tap_mysql.tap import TapMySQL
 
 TABLE_NAME = "test_replication_key"
 SAMPLE_CONFIG = {
-    "start_date": pendulum.datetime(2022, 11, 1).to_iso8601_string(),
+    "start_date": datetime.datetime(2022, 11, 1).isoformat(),
     # Using 127.0.0.1 instead of localhost because of mysqlclient dialect.
     # See: https://stackoverflow.com/questions/72294279/how-to-connect-to-mysql-databas-using-github-actions
     "sqlalchemy_url": f"mysql+pymysql://root:password@127.0.0.1:3306/melty",
