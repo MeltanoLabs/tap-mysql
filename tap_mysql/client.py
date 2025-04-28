@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 
 import singer_sdk.helpers._typing
 import sqlalchemy
+from sqlalchemy.types import TypeDecorator, DateTime, Date
 from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
@@ -412,6 +413,15 @@ class MySQLStream(SQLStream):
             self.fully_qualified_name,
             column_names=selected_column_names,
         )
+
+        # Apply TypeDecorators to Date and  DateTime columns
+        for column in table.columns:
+            if isinstance(column.type, DateTime):
+                column.type = ZeroDateTimeToNull()
+            elif isinstance(column.type, Date):
+                column.type = ZeroDateToNull()
+
+
         query = table.select()
         if self.replication_key:
             replication_key_col = table.columns[self.replication_key]
@@ -428,3 +438,29 @@ class MySQLStream(SQLStream):
                 )  # See https://github.com/planetscale/discussion/discussions/190
             for row in conn.execute(query):
                 yield dict(row)
+
+class ZeroDateTimeToNull(TypeDecorator):
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return value  # normal binding for insert/update
+
+    def process_result_value(self, value, dialect):
+        if value is not None and str(value) == '0000-00-00 00:00:00':
+            return None
+        else:
+            return value
+
+class ZeroDateToNull(TypeDecorator):
+    impl = Date
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        return value  # normal binding for insert/update
+
+    def process_result_value(self, value, dialect):
+        if value is not None and str(value) == '0000-00-00':
+            return None
+        else:
+            return value
