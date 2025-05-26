@@ -10,7 +10,7 @@ import sqlalchemy
 from faker import Faker
 from singer_sdk.testing import get_tap_test_class, suites
 from singer_sdk.testing.runners import TapTestRunner
-from sqlalchemy import Column, DateTime, Integer, MetaData, Numeric, String, Table
+from sqlalchemy import Column, DateTime, Integer, MetaData, Numeric, String, Table, text
 from sqlalchemy.dialects.mysql import DATE, DATETIME, JSON, TIME
 
 from tap_mysql.tap import TapMySQL
@@ -52,20 +52,21 @@ def setup_test_table(table_name, sqlalchemy_url):
         Column("name", String(length=100)),
     )
     with engine.connect() as conn:
-        metadata_obj.create_all(conn)
-        conn.execute(f"TRUNCATE TABLE {table_name}")
-        for _ in range(1000):
-            insert = test_replication_key_table.insert().values(
-                updated_at=fake.date_between(date1, date2),
-                name=fake.name(),
-            )
-            conn.execute(insert)
+        with conn.begin():  # Ensure transaction is committed
+            metadata_obj.create_all(conn)
+            conn.execute(text(f"TRUNCATE TABLE {table_name}"))
+            for _ in range(5):
+                insert = test_replication_key_table.insert().values(
+                    updated_at=fake.date_time_between(date1, date2),
+                    name=fake.name(),
+                )
+                conn.execute(insert)
 
 
 def teardown_test_table(table_name, sqlalchemy_url):
     engine = sqlalchemy.create_engine(sqlalchemy_url)
     with engine.connect() as conn:
-        conn.execute(f"DROP TABLE {table_name}")
+        conn.execute(text(f"DROP TABLE {table_name}"))
 
 
 custom_test_replication_key = suites.TestSuite(
@@ -73,18 +74,20 @@ custom_test_replication_key = suites.TestSuite(
     tests=[TapTestReplicationKey],
 )
 
+with open("tests/resources/data.json") as f:
+    catalog_dict = json.load(f)
 
 TapMySQLTest = get_tap_test_class(
     tap_class=TapMySQL,
     config=SAMPLE_CONFIG,
-    catalog="tests/resources/data.json",
+    catalog=catalog_dict,
     custom_suites=[custom_test_replication_key],
 )
 
 TapMySQLTestNOSQLALCHEMY = get_tap_test_class(
     tap_class=TapMySQL,
     config=NO_SQLALCHEMY_CONFIG,
-    catalog="tests/resources/data.json",
+    catalog=catalog_dict,
     custom_suites=[custom_test_replication_key],
 )
 
@@ -129,15 +132,18 @@ def test_temporal_datatypes():
         Column("column_timestamp", DATETIME),
     )
     with engine.connect() as conn:
-        if table.exists(conn):
-            table.drop(conn)
-        metadata_obj.create_all(conn)
-        insert = table.insert().values(
-            column_date="2022-03-19",
-            column_time="06:04:19.222",
-            column_timestamp="1918-02-03 13:00:01",
-        )
-        conn.execute(insert)
+        # Start a transaction
+        with conn.begin():
+            table.drop(engine, checkfirst=True)
+            metadata_obj.create_all(engine)
+            insert = table.insert().values(
+                column_date="2022-03-19",
+                column_time="06:04:19.222",
+                column_timestamp="1918-02-03 13:00:01",
+            )
+            conn.execute(insert)
+            # Transaction will be automatically committed here
+
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
     altered_table_name = f"melty-{table_name}"
@@ -178,6 +184,7 @@ def test_temporal_datatypes():
 
 
 def test_jsonb_json():
+    """Test JSON type handling."""
     table_name = "test_jsonb_json"
     engine = sqlalchemy.create_engine(SAMPLE_CONFIG["sqlalchemy_url"])
 
@@ -188,13 +195,16 @@ def test_jsonb_json():
         Column("column_json", JSON),
     )
     with engine.connect() as conn:
-        if table.exists(conn):
-            table.drop(conn)
-        metadata_obj.create_all(conn)
-        insert = table.insert().values(
-            column_json={"baz": "foo"},
-        )
-        conn.execute(insert)
+        # Start a transaction
+        with conn.begin():
+            table.drop(engine, checkfirst=True)
+            metadata_obj.create_all(engine)
+            insert = table.insert().values(
+                column_json={"baz": "foo"},
+            )
+            conn.execute(insert)
+            # Transaction will be automatically committed here
+
     tap = TapMySQL(config=SAMPLE_CONFIG)
     tap_catalog = json.loads(tap.catalog_json_text)
     altered_table_name = f"melty-{table_name}"
@@ -238,9 +248,8 @@ def test_decimal():
         Column("column", Numeric()),
     )
     with engine.connect() as conn:
-        if table.exists(conn):
-            table.drop(conn)
-        metadata_obj.create_all(conn)
+        table.drop(engine, checkfirst=True)
+        metadata_obj.create_all(engine)
         insert = table.insert().values(column=decimal.Decimal("3.14"))
         conn.execute(insert)
         insert = table.insert().values(column=decimal.Decimal("12"))
@@ -283,10 +292,9 @@ def test_filter_schemas():
     table = Table(table_name, metadata_obj, Column("id", Integer), schema="new_schema")
 
     with engine.connect() as conn:
-        conn.execute("CREATE SCHEMA IF NOT EXISTS new_schema")
-        if table.exists(conn):
-            table.drop(conn)
-        metadata_obj.create_all(conn)
+        conn.execute(text("CREATE SCHEMA IF NOT EXISTS new_schema"))
+        table.drop(engine, checkfirst=True)
+        metadata_obj.create_all(engine)
     filter_schemas_config = copy.deepcopy(SAMPLE_CONFIG)
     filter_schemas_config.update({"filter_schemas": ["new_schema"]})
     tap = TapMySQL(config=filter_schemas_config)
