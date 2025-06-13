@@ -117,6 +117,17 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
+            "skip_ordering",
+            th.BooleanType,
+            default=False,
+            description=(
+                "If true, disables ORDER BY when fetching data. "
+                "It can be useful when you have huge json columns inside your database and "
+                "ordering them throws memory related issues. "
+                "This may negatively affect incremental syncs and should be used with caution."
+            ),
+        ),
+        th.Property(
             "filter_schemas",
             th.ArrayType(th.StringType),
             description=(
