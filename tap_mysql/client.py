@@ -436,9 +436,11 @@ class MySQLStream(SQLStream):
             column_names=selected_column_names,
         )
         query = table.select()
+        skip_ordering = self.config.get("skip_ordering", False)
         if self.replication_key:
             replication_key_col = table.columns[self.replication_key]
-            query = query.order_by(replication_key_col)
+            if not skip_ordering:
+                query = query.order_by(replication_key_col)
 
             start_val = self.get_starting_replication_key_value(context)
             if start_val:
