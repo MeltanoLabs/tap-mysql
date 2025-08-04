@@ -37,6 +37,7 @@ singer-sdk = { version="~=0.44.3" }
 pymysql = "==1.1.1"
 sqlalchemy = "<3"
 sshtunnel = "0.4.0"
+paramiko = "^3.5.1"
 
 # Binary client for MySQL
 mysqlclient = { version = "==2.2.4", optional = true }
