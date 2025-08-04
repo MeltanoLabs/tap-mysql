@@ -16,7 +16,7 @@ Note that you will also need to install the requisite dependencies for mysqlclie
 
 ```bash
 sudo apt-get update
-sudo apt-get install package-cfg libmysqlclient-dev
+sudo apt-get install libmariadb-dev
 ```
 
 ## Configuration
@@ -173,6 +173,9 @@ ERROR 1049 (42000): VT05003: unknown database 'information_schema' in vschema
 Note that PlanetScale has a singer tap that they support. It's located here https://github.com/planetscale/singer-tap/
 It's written in Go, and it also supports Log Based replication.
 This is a great alternative to this tap if you're using PlanetScale.
+
+### Troubleshooting
+If the MySQL user does not have permissions to read from the `performance_schema.global_variables` table to check if the database is a PlanetScale MySQL instance, execution of the tap might fail with a `SELECT command denied to user` exception. To solve this issue, set `is_vitess = False`.
 
 ## Developer Resources
 
