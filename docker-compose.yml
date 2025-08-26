@@ -1,9 +1,8 @@
 ---
 # docker compose -f docker-compose.yml up -d
-version: "2.1"
 services:
   mysqldb:
-    image: mysql
+    image: mysql:8.0
     restart: always
     command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
@@ -13,7 +12,7 @@ services:
     ports:
       - 3306:3306
   mysqldb_ssh:
-    image: mysql
+    image: mysql:8.0
     restart: always
     command: --default-authentication-plugin=mysql_native_password --bind-address=0.0.0.0
     environment:
@@ -23,8 +22,12 @@ services:
     networks:
       inner:
         ipv4_address: 10.5.0.5
+    healthcheck:
+      test: [ "CMD", 'mysqladmin', 'ping', '-h', 'mysqldb_ssh', '-u', 'root', '-ppassword' ]
+      timeout: 5s
+      retries: 10
   ssh:
-    image: ghcr.io/linuxserver/openssh-server:9.1_p1-r2-ls106 # This docker repo has added breaking changes a lot in the last month, pinning this.
+    image: ghcr.io/linuxserver/openssh-server:9.9_p2-r0-ls193 # This docker repo has added breaking changes a lot in the last month, pinning this.
     hostname: openssh-server
     environment:
       - PUID=1000
@@ -34,11 +37,15 @@ services:
       - PASSWORD_ACCESS=false
       - USER_NAME=melty
     volumes:
-      - ./ssh_tunnel/ssh-server-config:/config/ssh_host_keys:ro
+      - ./ssh_tunnel/ssh_host_keys:/config/ssh_host_keys:ro
+      - ./ssh_tunnel/sshd:/config/sshd:rw
     ports:
       - "127.0.0.1:2223:2222"
     networks:
       - inner
+    depends_on:
+      mysqldb_ssh:
+        condition: service_healthy
 
 networks:
   inner:
