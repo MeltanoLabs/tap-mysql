@@ -7,15 +7,16 @@ from typing import TYPE_CHECKING, Any
 
 import singer_sdk.helpers._typing
 import sqlalchemy
-from sqlalchemy.types import TypeDecorator, DateTime, Date
 from singer_sdk import SQLConnector, SQLStream
 from singer_sdk import typing as th
 from singer_sdk._singerlib import CatalogEntry, MetadataMapping, Schema
 from singer_sdk.helpers._typing import TypeConformanceLevel
 from sqlalchemy import text
+from sqlalchemy.engine import reflection
+from sqlalchemy.types import Date, DateTime, TypeDecorator
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
 
     from sqlalchemy.engine import Engine
     from sqlalchemy.engine.reflection import Inspector, ReflectedPrimaryKeyConstraint
@@ -218,6 +219,103 @@ class MySQLConnector(SQLConnector):
         if "filter_schemas" in self.config and len(self.config["filter_schemas"]) != 0:
             return self.config["filter_schemas"]
         return super().get_schema_names(engine, inspected)
+
+    def get_table_names_for_schema(self, schema_name: str) -> list[str] | None:
+        """Return configured table names that apply to a schema.
+
+        Unqualified table names apply to every schema being discovered. Qualified
+        names use the ``schema.table`` format and only apply to the matching schema.
+        ``None`` means no table filter was configured.
+
+        Args:
+            schema_name: Schema currently being discovered.
+
+        Returns:
+            Table names to reflect, an empty list when the schema has no matching
+            configured tables, or ``None`` when discovery should not be filtered.
+        """
+        configured_tables = self.config.get("filter_tables")
+        if not configured_tables:
+            return None
+
+        table_names: list[str] = []
+        for configured_table in configured_tables:
+            configured_name = str(configured_table).strip()
+            if not configured_name:
+                continue
+
+            configured_schema, separator, table_name = configured_name.partition(".")
+            if not separator:
+                table_names.append(configured_schema)
+            elif configured_schema == schema_name and table_name:
+                table_names.append(table_name)
+
+        return list(dict.fromkeys(table_names))
+
+    def discover_catalog_entries(
+        self,
+        *,
+        exclude_schemas: Sequence[str] = (),
+        reflect_indices: bool = True,
+    ) -> list[dict]:
+        """Return catalog entries, filtering objects before metadata reflection.
+
+        Args:
+            exclude_schemas: Schema names to exclude from discovery.
+            reflect_indices: Whether to reflect indices for potential primary keys.
+
+        Returns:
+            Discovered catalog entries.
+        """
+        result: list[dict] = []
+        engine = self._engine
+        inspected = sqlalchemy.inspect(engine)
+        object_kinds = (
+            (reflection.ObjectKind.TABLE, False),
+            (reflection.ObjectKind.ANY_VIEW, True),
+        )
+
+        for schema_name in self.get_schema_names(engine, inspected):
+            if schema_name in exclude_schemas:
+                continue
+
+            filter_names = self.get_table_names_for_schema(schema_name)
+            if filter_names == []:
+                continue
+
+            primary_keys = inspected.get_multi_pk_constraint(
+                schema=schema_name,
+                filter_names=filter_names,
+            )
+            if reflect_indices:
+                indices = inspected.get_multi_indexes(
+                    schema=schema_name,
+                    filter_names=filter_names,
+                )
+            else:
+                indices = {}
+
+            for object_kind, is_view in object_kinds:
+                columns = inspected.get_multi_columns(
+                    schema=schema_name,
+                    filter_names=filter_names,
+                    kind=object_kind,
+                )
+                result.extend(
+                    self.discover_catalog_entry(
+                        engine,
+                        inspected,
+                        schema_name,
+                        table_name,
+                        is_view,
+                        reflected_columns=columns[schema, table_name],
+                        reflected_pk=primary_keys.get((schema, table_name)),
+                        reflected_indices=indices.get((schema, table_name), []),
+                    ).to_dict()
+                    for schema, table_name in columns
+                )
+
+        return result
 
     def discover_catalog_entry(  # noqa: PLR0913
         self,
