@@ -126,6 +126,16 @@ class TapMySQL(SQLTap):
             ),
         ),
         th.Property(
+            "filter_tables",
+            th.ArrayType(th.StringType),
+            description=(
+                "If an array of table or view names is provided, the tap will only "
+                "reflect and process those objects. Names may be unqualified or use "
+                "the schema.table format. If left blank, the tap automatically "
+                "determines ALL available objects in the selected schemas."
+            ),
+        ),
+        th.Property(
             "is_vitess",
             th.BooleanType,
             default=None,
